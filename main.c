@@ -1,6 +1,16 @@
 #include <stdio.h>
 #include <string.h>
 
+#define INFINITY (16)
+
+struct node_interface {
+	int id;
+	char vip[32];
+	char status[32]; //up by default
+};
+
+struct node_interface interfaces[INFINITY];
+
 int main(int argc, char* argv[]) {
 	if (argc > 2) {
 		printf("Incorrect input\n");
@@ -13,9 +23,10 @@ int main(int argc, char* argv[]) {
 	char *vipThis;
 	char *vipRemote;
 	int port;
+	int count; 
 
 	FILE *fr = fopen(argv[1], "r");
-	int count = 0;
+	count = 0;
 	while (fgets(line, sizeof(line), fr)) {
 		printf("\nLINE: %s", line);
 		split = strtok(line, ":"); //segment before ":"
@@ -34,7 +45,7 @@ int main(int argc, char* argv[]) {
 			count++;
 			port = atoi(split);
 			printf("PORT: %d\n", port);
-			//return client(ipAddr, port);
+			//return createClient(ipAddr, port);
 
 		} else { //not first line; "port" is remote host's port, and 
 			 //there should be VIPs following
@@ -57,7 +68,15 @@ int main(int argc, char* argv[]) {
 
 			printf("VIPTHIS: %s\n", vipThis);
 			printf("VIPREMOTE: %s\n", vipRemote);
-			//create interface, do some other stuff?
+			
+			//create interface object
+			interfaces[count].id = count;
+			strcpy(interfaces[count].vip, vipThis);
+			strcpy(interfaces[count].status, "up");
+
+			printf("%d\t%s\t%s\n", interfaces[count].id, interfaces[count].vip, interfaces[count].status);
+			
+			count++;
 		}
 		
 	}
