@@ -1,7 +1,8 @@
 #include <stdio.h>
 #include <string.h>
+#include "UDPSocket.h"
 
-#define INFINITY (16)
+#define INFINITY (1024)
 
 struct node_interface {
 	int id;
@@ -13,6 +14,7 @@ struct node_interface {
 
 struct node_interface interfaces[INFINITY];
 int count;
+int *sock;
 
 int main(int argc, char* argv[]) {
 	if (argc > 2) {
@@ -46,7 +48,10 @@ int main(int argc, char* argv[]) {
 		if (count == 0) { //first line; "port" is this node's port
 			port = atoi(split);
 			printf("PORT: %d\n", port);
-			//return createClient(ipAddr, port);
+		
+			sock = (int *)malloc(sizeof(int));
+			create_socket(sock);
+			bind_node_addr(sock, ipAddr, (uint16_t) port);
 
 		} else { //not first line; "port" is remote host's port, and 
 			 //there should be VIPs following

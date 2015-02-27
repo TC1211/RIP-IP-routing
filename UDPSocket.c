@@ -6,9 +6,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 
-
 int create_socket(int *sock){
-
 	if ((*sock = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
 		perror("Create socket error:");
 		return 1;
@@ -65,49 +63,5 @@ int sock_recv(int *sock,char *addr, uint16_t port, char *received_packet){
                 }
         }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
