@@ -10,6 +10,7 @@ struct node_interface {
 };
 
 struct node_interface interfaces[INFINITY];
+int count;
 
 int main(int argc, char* argv[]) {
 	if (argc > 2) {
@@ -23,7 +24,6 @@ int main(int argc, char* argv[]) {
 	char *vipThis;
 	char *vipRemote;
 	int port;
-	int count; 
 
 	FILE *fr = fopen(argv[1], "r");
 	count = 0;
@@ -70,16 +70,22 @@ int main(int argc, char* argv[]) {
 			printf("VIPREMOTE: %s\n", vipRemote);
 			
 			//create interface object
-			interfaces[count].id = count;
-			strcpy(interfaces[count].vip, vipThis);
-			strcpy(interfaces[count].status, "up");
+			interfaces[count - 1].id = count;
+			strcpy(interfaces[count - 1].vip, vipThis);
+			strcpy(interfaces[count - 1].status, "up");
 
-			printf("%d\t%s\t%s\n", interfaces[count].id, interfaces[count].vip, interfaces[count].status);
-			
+			printInterfaces();
 			count++;
 		}
 		
 	}
 	fclose(fr);
 	return 0;
+}
+
+int printInterfaces() {
+	int i = 0;
+	for(i = 0; i < count; i++) {
+		printf("%d\t%s\t%s\n", interfaces[i].id, interfaces[i].vip, interfaces[i].status);
+	}
 }
