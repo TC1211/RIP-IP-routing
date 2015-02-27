@@ -47,22 +47,3 @@ int bind_node_addr(int *sock, const char *addr, uint16_t port){
 	printf("Bound to Node VIP %s, port number: %d\n", addr, port);
 	return 0;
 }
-
-int sock_listen(int *sock, int backlog){
-	listen(*sock, backlog);
-	return 0;
-}
-
-int node_accept_and_process(int *accepted_client_sock, int *sock){
-	int client_addr_len;
-	struct sockaddr_in client_addr;
-
-	*accepted_client_sock = accept(*sock, (struct sockaddr *) &client_addr, (socklen_t*)&client_addr_len);
-	if (accepted_client_sock < 0) {
-	      	perror("Accept error");
-	      	return 1;
-	}
-
-	printf("Accepted client socket handle: %i \n", *accepted_client_sock);	
-	return 0;
-}
