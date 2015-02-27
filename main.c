@@ -28,7 +28,7 @@ int main(int argc, char* argv[]) {
 	FILE *fr = fopen(argv[1], "r");
 	count = 0;
 	while (fgets(line, sizeof(line), fr)) {
-		printf("\nLINE: %s", line);
+		printf("\n%s", line);
 		split = strtok(line, ":"); //segment before ":"
 
 		//set up ipAddr variable
@@ -42,7 +42,6 @@ int main(int argc, char* argv[]) {
 		split = strtok(NULL, ":"); //segment after ":"
 		
 		if (count == 0) { //first line; "port" is this node's port
-			count++;
 			port = atoi(split);
 			printf("PORT: %d\n", port);
 			//return createClient(ipAddr, port);
@@ -74,18 +73,43 @@ int main(int argc, char* argv[]) {
 			strcpy(interfaces[count - 1].vip, vipThis);
 			strcpy(interfaces[count - 1].status, "up");
 
-			printInterfaces();
-			count++;
+			//test:
+			ifconfig();
+			changeUpDown("down", 1);
+			changeUpDown("down", 2); //should fail in 1st run of else branch
 		}
-		
+		count++;
 	}
 	fclose(fr);
 	return 0;
 }
 
-int printInterfaces() {
+int ifconfig() {
 	int i = 0;
 	for(i = 0; i < count; i++) {
 		printf("%d\t%s\t%s\n", interfaces[i].id, interfaces[i].vip, interfaces[i].status);
 	}
+	return 0;
+}
+
+int changeUpDown (char *upOrDown, int id) {
+	int i = 0;
+	for(i = 0; i < count; i++) {
+		if(id == interfaces[i].id) {
+			strcpy(interfaces[i].status, upOrDown);
+			printf("Interface %d %s\n", interfaces[i].id, interfaces[i].status);
+			//triggered updates here
+			return 0;
+		}
+	}
+	printf("Interface %d not found\n", id);
+	return 1;
+}
+
+int routes() {
+	//interact with interface to find and print all next-hops; consult table
+}
+
+int send(char *vip, char *message) {
+	//find appropriate next hop (consult table) and send
 }
