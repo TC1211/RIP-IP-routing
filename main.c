@@ -5,6 +5,8 @@
 
 struct node_interface {
 	int id;
+	int port;
+	char ipAddr[32];
 	char vip[32];
 	char status[32]; //up by default
 };
@@ -70,6 +72,8 @@ int main(int argc, char* argv[]) {
 			
 			//create interface object
 			interfaces[count - 1].id = count;
+			interfaces[count - 1].port = port;
+			strcpy(interfaces[count - 1].ipAddr, ipAddr);
 			strcpy(interfaces[count - 1].vip, vipThis);
 			strcpy(interfaces[count - 1].status, "up");
 
@@ -88,6 +92,8 @@ int ifconfig() {
 	int i = 0;
 	for(i = 0; i < count; i++) {
 		printf("%d\t%s\t%s\n", interfaces[i].id, interfaces[i].vip, interfaces[i].status);
+		//for testing:
+		printf(" ipAddr: %s\tport: %d\n", interfaces[i].ipAddr, interfaces[i].port);
 	}
 	return 0;
 }
