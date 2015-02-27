@@ -49,7 +49,7 @@ int sock_send(int *sock, char *addr, uint16_t port, char* packet){
 }
 
 int sock_recv(int *sock,char *addr, uint16_t port, char *received_packet){
-	struct only sockaddr_in receivedfrom_addr;
+	struct sockaddr_in receivedfrom_addr;
 	int recvlen;
 
 	receivedfrom_addr.sin_addr.s_addr = inet_addr(addr);
