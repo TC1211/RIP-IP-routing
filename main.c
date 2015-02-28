@@ -1,8 +1,12 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include <signal.h>
+#include <sys/types.h>
 #include "UDPSocket.h"
 
-#define INFINITY (1024)
+#define MAXENTRY (1024)
 
 struct node_interface {
 	int id;
@@ -12,7 +16,8 @@ struct node_interface {
 	char status[32]; //up by default
 };
 
-struct node_interface interfaces[INFINITY];
+struct node_interface interfaces[MAXENTRY];
+pid_t children_pid[MAXENTRY];
 int count;
 int *sock;
 
@@ -21,15 +26,23 @@ int main(int argc, char* argv[]) {
 		printf("Incorrect input\n");
 		return 1;
 	}
-	char line[256];
-	char *split;
-	char *colon;
-	char *ipAddr;
-	char *vipThis;
-	char *vipRemote;
-	int port;
+	parse_file(argv[1]);
+	create_listening_sock();
+	test_send();
+	while(1){};
+	kill_all_children();
+	close(*sock);
+	return 0;
+}
 
-	FILE *fr = fopen(argv[1], "r");
+int parse_file(char *path){
+	struct node_interface *copy = interfaces;
+	char line[256];
+	char *split, *colon, *ipAddr, *vipThis, *vipRemote;
+	int port;
+	pid_t pid;
+
+	FILE *fr = fopen(path, "r");
 	count = 0;
 	while (fgets(line, sizeof(line), fr)) {
 		printf("\n%s", line);
@@ -46,11 +59,12 @@ int main(int argc, char* argv[]) {
 		split = strtok(NULL, ":"); //segment after ":"
 		
 		if (count == 0) { //first line; "port" is this node's port
-			port = atoi(split);
+			port = (uint16_t) atoi(split);
 			printf("PORT: %d\n", port);
-		
+
+			int on=1;
 			sock = (int *)malloc(sizeof(int));
-			create_socket(sock);
+			create_socket(sock);		
 			bind_node_addr(sock, ipAddr, (uint16_t) port);
 
 		} else { //not first line; "port" is remote host's port, and 
@@ -72,16 +86,17 @@ int main(int argc, char* argv[]) {
 			}
 			vipRemote = split;
 
-			printf("VIPTHIS: %s\n", vipThis);
-			printf("VIPREMOTE: %s\n", vipRemote);
+			//printf("VIPTHIS: %s\n", vipThis);
+			//printf("VIPREMOTE: %s\n", vipRemote);
 			
 			//create interface object
-			interfaces[count - 1].id = count;
-			interfaces[count - 1].port = port;
-			strcpy(interfaces[count - 1].ipAddr, ipAddr);
-			strcpy(interfaces[count - 1].vip, vipThis);
-			strcpy(interfaces[count - 1].status, "up");
+			copy->id = count;
+			copy->port = port;
+			strcpy(copy->ipAddr, ipAddr);
+			strcpy(copy->vip, vipThis);
+			strcpy(copy->status, "up");
 
+			copy++;
 			//test:
 			ifconfig();
 			changeUpDown("down", 1);
@@ -90,6 +105,30 @@ int main(int argc, char* argv[]) {
 		count++;
 	}
 	fclose(fr);
+	return 0;
+}
+
+int create_listening_sock(){
+	int i = 0;
+	while(interfaces[i].id != 0 && i < MAXENTRY){
+		//Create a receive process (which for now will only print stuff out)
+		pid_t pid = fork();
+		if (pid < 0){
+			perror("Fork Failed");
+			return 1;
+		}	
+		else if ((int)pid == 0){ //child
+			char *received_packet;
+			received_packet = (char *)malloc(64000);	
+			sock_recv(sock, interfaces[i].ipAddr, (uint16_t) interfaces[i].port, received_packet);
+			//for now lets print everything out. will do the ip rip later
+
+		}
+		else{
+			children_pid[i] = pid;
+		}
+		i++;
+	}
 	return 0;
 }
 
@@ -123,4 +162,24 @@ int routes() {
 
 int send(char *vip, char *message) {
 	//find appropriate next hop (consult table) and send
+}
+
+int test_send(){
+	int i = 0;
+	while(i != 10){
+	char packet[512] = "baka baka baka!!";
+	sock_send(sock, "localhost", 17001, packet);
+	i++;
+	}
+}
+
+int kill_all_children(){
+	int i;
+	pid_t *copy = children_pid;
+	while(*copy > 0){
+		*copy = 0;
+		kill(*copy,SIGKILL);
+		copy++;
+	}
+	return 0;
 }
