@@ -8,7 +8,7 @@ struct IPpacket{
 }
 
 
-int is_RIP(struct ip *{header){
+int is_RIP(struct ip *header){
 	//check whether to deliver to RIP
 	if(header->ip_p == 200){ //RIP
 		return 1;
