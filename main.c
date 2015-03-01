@@ -4,12 +4,19 @@
 #include <unistd.h>
 #include <signal.h>
 #include <sys/types.h>
+#include <stdint.h>
 #include <pthread.h>
-#include "UDPSocket.h"
+#include "UDPIPInterface.h"
 #include "IPRIPInterface.c"
 
-#define MAXENTRY (1024);
-#define INFINITY (16);
+int parse_file(char *);
+int create_listening_sock();
+int ifconfig();
+int changeUpDown();
+void *receive_func(void *);
+
+#define MAXENTRY 1024
+#define INFINITY 16
 
 struct node_interface {
 	int id;
@@ -20,8 +27,15 @@ struct node_interface {
 	char status[32]; //up by default
 };
 
-struct node_interface interfaces[MAXENTRY];
-pid_t children_pid[MAXENTRY];
+struct thread_arg_list{
+	int *sock;
+	char *addr;
+	uint16_t port;
+	char *received_packet;
+};
+
+struct node_interface interfaces[1024];
+pthread_t children_tid[1024];
 int count;
 int *sock;
 char ipAddrThis[32];
@@ -35,6 +49,7 @@ int main(int argc, char* argv[]) {
 	create_listening_sock();
 	test_send();
 	struct node_interface *interface_pointer = interfaces;
+
 	while (interface_pointer->id != 0) {
 		//update fwding table
 		update_fwd_table(interface_pointer->ipAddr, interface_pointer->ipAddr, INFINITY);
@@ -44,7 +59,6 @@ int main(int argc, char* argv[]) {
 	
 	while (1) {};
 
-	kill_all_children();
 	close(*sock);
 
 	return 0;
@@ -125,22 +139,23 @@ int parse_file(char *path){
 int create_listening_sock(){
 	int i = 0;
 	while(interfaces[i].id != 0 && i < MAXENTRY){
-		//Create a receive process (which for now will only print stuff out)
-		pid_t pid = fork();
-		if (pid < 0){
-			perror("Fork Failed");
-			return 1;
+		char *received_packet;
+		received_packet = (char *)malloc(64000);
+		
+		
+		struct thread_arg_list *arg_list;
+		arg_list = (struct thread_arg_list*)malloc(sizeof(struct thread_arg_list));
+		arg_list->sock = sock;
+		arg_list->addr = interfaces[i].ipAddr;
+		arg_list->port = interfaces[i].port;
+		arg_list->received_packet = received_packet;
+		//create thread
+		int result;		
+		if((result = pthread_create(&children_tid[i], NULL, receive_func,arg_list))){
+		perror("Create thread Failed");
+		return 1;
 		}	
-		else if ((int)pid == 0){ //child
-			char *received_packet;
-			received_packet = (char *)malloc(64000);	
-			sock_recv(sock, interfaces[i].ipAddr, (uint16_t) interfaces[i].port, received_packet);
-			//for now lets print everything out. will do the ip rip later
-
-		}
-		else{
-			children_pid[i] = pid;
-		}
+			
 		i++;
 	}
 	return 0;
@@ -169,6 +184,16 @@ int changeUpDown (char *upOrDown, int id) {
 	printf("Interface %d not found\n", id);
 	return 1;
 }
+
+/* for now its just printing but eventually all receives must be dealt with here */
+void *receive_func(void *arg) {
+	struct thread_arg_list *args = (struct thread_arg_list *)arg;
+
+  	set_up_recv_sock(args->sock,args->addr, args->port, args->received_packet);
+ 	
+  	pthread_exit(NULL);
+}
+
 
 int send_RIP_request(int id, char ipAddrSrc, char ipAddrDst) {
 	struct entry *entries[1024];
@@ -235,19 +260,6 @@ int test_send(){
 	}
 }
 
-int kill_all_children(){
-	int i;
-	pid_t *copy = children_pid;
-	while(*copy > 0){
-		*copy = 0;
-		kill(*copy,SIGKILL);
-		copy++;
-	}
-	return 0;
-}
-
 int receive_message() {
 
 }
-
-
