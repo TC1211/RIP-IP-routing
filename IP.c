@@ -28,4 +28,4 @@ int process_header_for_forwarding(struct ip *header) {
 	memcpy(header_char, header, sizeof(struct ip));
 	header->ip_sum = ip_sum(header_char, (int) sizeof(struct ip));
 	return 0;
-}s
+}

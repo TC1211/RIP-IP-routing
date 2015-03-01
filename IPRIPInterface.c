@@ -2,6 +2,9 @@
 #include <stdio.h>
 #include <time.h>
 #include <inttypes.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #include "RIP.c"
 #include "IP.h"
 
