@@ -19,10 +19,10 @@ IP.o: IP.c IP.h ipsum.h
 UDPIPInterface.o: UDPIPInterface.c UDPIPInterface.h IP.h UDPSocket.h
 	$(CC) $(CFLAGS) -c UDPIPInterface.c
 
-RIP.o: RIP.c 
+RIP.o: RIP.c RIP.h
 	$(CC) $(CFLAGS) -c RIP.c
 
-IPRIPInterface.o: IPRIPInterface.c RIP.c IP.h
+IPRIPInterface.o: IPRIPInterface.c RIP.h IP.h
 	$(CC) $(CFLAGS) -c IPRIPInterface.c
 
 clean: 

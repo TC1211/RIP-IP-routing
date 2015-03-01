@@ -1,11 +1,13 @@
 #include <stdint.h>
+#include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <time.h>
 #include <inttypes.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include "RIP.c"
+#include "RIP.h"
 #include "IP.h"
 
 #define INFINITY (16);
