@@ -1,5 +1,6 @@
-#include "IP.c"
+#include "UDPIPInterface.h"
 #include "UDPSocket.h"
+
 
 int set_up_recv_sock(int *sock,char *addr, uint16_t port, char *received_packet){
 	struct sockaddr_in receivedfrom_addr;
@@ -8,24 +9,24 @@ int set_up_recv_sock(int *sock,char *addr, uint16_t port, char *received_packet)
 	return 0;
 }
 
-int UDPtoIP(char *packet){
+int UDPtoIP(char *packet) {
 
 }
 
  
 
-int fragment_large_packets(){
+int fragment_large_packets() {
 
 }
 
  
 
-int assemble_broken_fragments(){
+int assemble_broken_fragments() {
 
 }
 
  
 
-int send_in_order(){
+int send_in_order() {
 
 }

@@ -3,16 +3,16 @@
 #include <time.h>
 #include <inttypes.h>
 #include "RIP.c"
-#include "IP.c"
+#include "IP.h"
 
 #define INFINITY (16);
 
-struct fwd_entry {
+struct fwdentry {
 	char *destIPAddr[32];
 	char *nextHopIP[32];
 	int cost; 
 	time_t last_refresh;
-}
+} fwd_entry;
 
 struct fwd_entry *fwd_table[1024]; 
 
@@ -25,7 +25,21 @@ struct ip_packet *construct_IP_packet(int num_entries, struct entry *entries, in
 	uint8_t ttl_in = (uint8_t) ttl;
 	
 	struct rip_packet *ripPacket = construct_RIP_packet(command_in, num_entries_in, entries);
-	struct ip_packet *ipPacket = construct_ip_packet(ripPacket, id_in, ipAddrSrc, ipAddrDst, ttl_in);
+	struct ip_packet *ipPacket = construct_IP_packet_IP(ripPacket, id_in, ipAddrSrc, ipAddrDst, ttl_in);
+	return ipPacket;
+}
+
+struct ip_packet *construct_IP_packet_IP(struct rip_packet ripPacket, uint16_t id, uint32_t ipAddrSrc, uint32_t ipAddrDest, uint8_t ttl) {
+	struct ip_packet *ipPacket;
+	struct ip_packet *pointer;
+	strcpy(pointer->payload, ripPacket);
+	pointer->header->ip_id = id;
+	strcpy(pointer->header->ip_src, ipAddrSrc);
+	strcpy(pointer->header->ip_dst, ipAddrDest);
+
+	pointer->header->ip_sum = ip_sum(header, sizeof(struct ip));
+	pointer->header->ip_ttl = ttl; 
+
 	return ipPacket;
 }
 
