@@ -32,17 +32,16 @@ int bind_node_addr(int *sock, const char *addr, uint16_t port){
 }
 
 int sock_send(int *sock, char *addr, uint16_t port, char* packet){
+	int length;
 	struct sockaddr_in sendaddr;
-
-
 	sendaddr.sin_addr.s_addr = inet_addr(addr);
 	sendaddr.sin_family = AF_INET;
 	sendaddr.sin_port = htons(port);
-
-	if (sendto(*sock, packet, 1400/*Enforce MTU */, 0, (struct sockaddr *)&sendaddr, sizeof(sendaddr)) < 0) {
+	if ((length = sendto(*sock, packet, 1400, 0, (struct sockaddr *)&sendaddr, sizeof(sendaddr))) < 0) {
 		perror("sendto failed");
 		return 1;
 	}
+	printf("send successful: %d bytes sent\n", length);
 	return 0;
 }
 

@@ -13,6 +13,22 @@ struct entry {
 	uint32_t address;
 } entries[num_entries];
 
+struct rip_packet {
+	uint16_t command;
+	uint16_t num_entries;
+	struct entry *entries[1024];
+};
+
+struct rip_packet *construct_RIP_packet(uint16_t command, uint16_t num_entries, struct entry *entries) {
+	struct rip_packet *ripPacket;
+	struct rip_packet *pointer = ripPacket;
+	pointer->command = command;
+	
+	pointer->num_entries = num_entries;
+	strcpy(pointer->entries, entries);
+	return ripPacket;
+}
+
 int processPacket() {
 	
 }
@@ -21,6 +37,5 @@ int parse(*entry) {
 
 }
 
-sendToInterface() {
-	constructPacket(command, num_entries, *entries);
-}
+
+
