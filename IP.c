@@ -1,3 +1,5 @@
+#include <stdio.h>
+#include <string.h>
 #include "IP.h"
 
 /*struct ip_packet {
@@ -16,8 +18,14 @@ int is_RIP(struct ip *header) {
 
 int process_header_for_forwarding(struct ip *header) {
 	//Decrement TTL
-	header->ip_ttl = (u_char) ((int)header->ip_ttl-1);
+	int ttl = (int) header->ip_ttl;
+	ttl -= 1;
+	unsigned char ttl_uchar = (unsigned char) ttl;
+	header->ip_ttl = ttl_uchar;
+
 	//Recompute Checksum
-	header->ip_sum = ip_sum(header, sizeof(struct ip));
+	char *header_char = (char *)malloc(sizeof(struct ip));
+	memcpy(header_char, header, sizeof(struct ip));
+	header->ip_sum = ip_sum(header_char, (int) sizeof(struct ip));
 	return 0;
-}
+}s
