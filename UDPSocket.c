@@ -6,11 +6,15 @@
 #include <unistd.h>
 #include <stdlib.h>
 
+
 int create_socket(int *sock){
+
 	if ((*sock = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
 		perror("Create socket error:");
 		return 1;
 	}
+	int on=1;
+	setsockopt(*sock, SOL_SOCKET, SO_BROADCAST, &on, sizeof(on));
 	printf("Socket created, Handle: %i\n", *sock);
 	return 0;
 }
@@ -32,35 +36,43 @@ int bind_node_addr(int *sock, const char *addr, uint16_t port){
 }
 
 int sock_send(int *sock, char *addr, uint16_t port, char* packet){
-	int length;
 	struct sockaddr_in sendaddr;
+	ssize_t length;
+
 	sendaddr.sin_addr.s_addr = inet_addr(addr);
 	sendaddr.sin_family = AF_INET;
 	sendaddr.sin_port = htons(port);
-	if ((length = sendto(*sock, packet, 1400, 0, (struct sockaddr *)&sendaddr, sizeof(sendaddr))) < 0) {
+	//printf("%s", packet);
+	if ((length = sendto(*sock, packet, 1400/*Enforce MTU */, 0, (struct sockaddr *)&sendaddr, sizeof(sendaddr))) < 0) {
 		perror("sendto failed");
 		return 1;
 	}
-	printf("send successful: %d bytes sent\n", length);
+	printf("send succesful:%i bytes sent\n", (int) length);
 	return 0;
 }
 
-int sock_recv(int *sock,char *addr, uint16_t port, char *received_packet){
-	struct sockaddr_in receivedfrom_addr;
-	int recvlen;
+int recv_sockaddr(int *sock,char *addr, uint16_t port, struct sockaddr_in *receivedfrom_addr){
 
-	receivedfrom_addr.sin_addr.s_addr = inet_addr(addr);
-	receivedfrom_addr.sin_family = AF_INET;
-	receivedfrom_addr.sin_port = htons(port);
+	receivedfrom_addr->sin_addr.s_addr = inet_addr(addr);
+	receivedfrom_addr->sin_family = AF_INET;
+	receivedfrom_addr->sin_port = htons(port);
 
-	while(1) { /* Listens on one interface */
-                recvlen = recvfrom(*sock, received_packet, 64000, 0, (struct sockaddr *)&receivedfrom_addr, NULL);
-                printf("received %d bytes\n", recvlen);
-                if (recvlen > 0) {
-                        received_packet[recvlen] = 0;
-                        printf("received message: \"%s\"\n", received_packet);
-                }
-        }
+	printf("listening to port: %i\n", (int)port);
+	return 0;
 }
 
+int sock_recv(int *sock,struct sockaddr_in *receivedfrom_addr, char *received_packet){
+	int recvlen = 0;
+	socklen_t fromlen;
+	
+	fromlen = sizeof(receivedfrom_addr);
+        recvlen = recvfrom(*sock, received_packet, 64000, 0, (struct sockaddr *)&receivedfrom_addr, &fromlen);
 
+        printf("received %d bytes\n", recvlen);
+        if (recvlen > 0) {
+            	received_packet[recvlen] = 0;
+                printf("received message: \"%s\"\n", received_packet);
+		return 0;
+        }
+	return 1;
+}
