@@ -10,16 +10,36 @@
 
 #define INFINITY (16);
 
-struct fwdentry {
+typedef struct fwdentry {
 	char *destIPAddr[32];
 	char *nextHopIP[32];
 	int cost; 
 	time_t last_refresh;
 } fwd_entry;
 
-struct fwd_entry *fwd_table[1024]; 
+struct fwd_entry *fwd_table; 
 
-struct ip_packet *construct_IP_packet(int num_entries, struct entry *entries, int command, int id, char ipAddrSource, char ipAddrDest, uint8_t ttl) { 
+ip_packet *construct_IP_packet_IP(rip_packet *ripPacket, uint16_t id, uint32_t ipAddrSrc, uint32_t ipAddrDest, uint8_t ttl) {
+	ip_packet *ipPacket = (ip_packet *)malloc(sizeof(ip_packet));
+	ip_packet *pointer = ipPacket;
+	memcpy(pointer->payload, ripPacket, sizeof(pointer->payload));
+
+	pointer->header.ip_id = id;
+	void *pointer_src = &pointer->header.ip_src;
+	memcpy(pointer_src, &ipAddrSrc, sizeof(pointer->header.ip_src));
+	void *pointer_dst = &pointer->header.ip_dst;
+	memcpy(pointer_dst, &ipAddrDest, sizeof(pointer->header.ip_dst));
+
+	char *header_char = (char *)malloc(sizeof(struct ip));
+	memcpy(header_char, &pointer->header, sizeof(struct ip));
+	pointer->header.ip_sum = ip_sum(header_char, (int) sizeof(struct ip));
+
+	pointer->header.ip_ttl = ttl; 
+
+	return ipPacket;
+}
+
+ip_packet *construct_IP_packet(int num_entries, struct entry *entries, int command, int id, char *ipAddrSource, char *ipAddrDest, uint8_t ttl) { 
 	uint16_t command_in = (uint16_t) command;
 	uint16_t num_entries_in = (uint16_t) num_entries;
 	uint32_t ipAddrSrc = (uint32_t) inet_addr(ipAddrSource);
@@ -27,41 +47,29 @@ struct ip_packet *construct_IP_packet(int num_entries, struct entry *entries, in
 	uint16_t id_in = (uint16_t) id;
 	uint8_t ttl_in = (uint8_t) ttl;
 	
-	struct rip_packet *ripPacket = construct_RIP_packet(command_in, num_entries_in, entries);
-	struct ip_packet *ipPacket = construct_IP_packet_IP(ripPacket, id_in, ipAddrSrc, ipAddrDst, ttl_in);
-	return ipPacket;
-}
-
-struct ip_packet *construct_IP_packet_IP(struct rip_packet ripPacket, uint16_t id, uint32_t ipAddrSrc, uint32_t ipAddrDest, uint8_t ttl) {
-	struct ip_packet *ipPacket;
-	struct ip_packet *pointer;
-	strcpy(pointer->payload, ripPacket);
-	pointer->header->ip_id = id;
-	strcpy(pointer->header->ip_src, ipAddrSrc);
-	strcpy(pointer->header->ip_dst, ipAddrDest);
-
-	pointer->header->ip_sum = ip_sum(header, sizeof(struct ip));
-	pointer->header->ip_ttl = ttl; 
-
+	rip_packet *ripPacket = construct_RIP_packet(command_in, num_entries_in, entries);
+	ip_packet *ipPacket = construct_IP_packet_IP(ripPacket, id_in, ipAddrSrc, ipAddrDst, ttl_in);
 	return ipPacket;
 }
 
 int update_fwd_table(char *destIPAddr, char *nextHopIP, int cost) {
-	struct fwd_entry *fwd_table_pointer = fwd_table;
+	fwd_entry *fwd_table_pointer = (fwd_entry *)fwd_table;
 	while (fwd_table_pointer->destIPAddr != 0) {
-		if (fwd_table_pointer->destIPAddr == destIPAddr) {
+		if (strcmp((const char*)fwd_table_pointer->destIPAddr, (const char*)destIPAddr) == 0) {
 			if (fwd_table_pointer->cost > cost) {
-				fwd_table_pointer->nextHopIP = nextHopIP;
+				memcpy(fwd_table_pointer->nextHopIP, nextHopIP, sizeof(fwd_table_pointer->nextHopIP));
 				fwd_table_pointer->cost = cost;
 				fwd_table_pointer->last_refresh = time(NULL);
 				return 0;
 			}
 		}
-		fwd_table_pointer++;
+		void *iterator = (void *)fwd_table_pointer;
+		iterator += sizeof(fwd_entry);
+		fwd_table_pointer = (fwd_entry *)iterator; 
 	}
 	//entry not found in forwarding table; must add to table
-	struct fwd_entry *ent = (fwd_entry *)fwd_table_pointer;
-	ent->destIPAddr = destIPAddr;
+	fwd_entry *ent = (fwd_entry *)fwd_table_pointer;
+	memcpy(&ent->destIPAddr, destIPAddr, sizeof(ent->destIPAddr));
 	ent->cost = cost;
 	ent->last_refresh = time(NULL);
 	return 0;
