@@ -17,7 +17,7 @@
 #define MAX_ENTRY 1024
 
 typedef struct fwd_entry {
-	char *destIPAddr;
+	char destVIPAddr[32];
 	int nextHopInterfaceID;
 	int cost; 
 	time_t last_refresh;
@@ -27,6 +27,6 @@ fwd_entry *fwd_table;
 
 int create_fwd_table();
 ip_packet *construct_packet(int num_entries, entry *entries, int command, int id, char *ipAddrSource, char *ipAddrDest, uint8_t ttl);
-int update_fwd_table(char *destIPAddr, int nextHopID, int cost);
+int update_fwd_table(char destVIPAddr[32], int nextHopID, int cost);
 
 #endif

@@ -195,17 +195,17 @@ int send_RIP_response(int id, char *ipAddrSource, char *ipAddrDest) {
 	fwd_entry *fwd_pointer;
 	while(interface_pointer->ipAddr != '\0') {
 		fwd_pointer = fwd_table;
-		while (strcmp(fwd_pointer->destIPAddr, interface_pointer->ipAddr) != 0) {
+		while (strcmp(fwd_pointer->destVIPAddr, interface_pointer->vipRemote) != 0) {
 			void *pointer;
 			pointer += sizeof(fwd_entry);
 			fwd_pointer = (fwd_entry *)pointer;
 		}
-		if (fwd_pointer->destIPAddr <= 0) {
+		if (fwd_pointer->destVIPAddr <= 0) {
 			printf("Error with finding correct destination IP address in send_RIP_response\n");
 			return 1;
 		}
 		entry_pointer->cost = (uint32_t) fwd_pointer->cost;
-		entry_pointer->address = (uint32_t) inet_addr(fwd_pointer->destIPAddr);
+		entry_pointer->address = (uint32_t) inet_addr(fwd_pointer->destVIPAddr);
 		void *epointer;
 		epointer += sizeof(entry);
 		entry_pointer = (entry *) epointer;
@@ -250,7 +250,7 @@ int send_message(char *vip, char *message) {
 int test_send(){
 	int i = 0;
 	while(i != 10){
-		char packet[512] = "hello world\n";
+		char packet[512] = "hello world";
 		sock_send(sock, "127.0.0.1", 17001, packet);
 		i++;
 	}
@@ -268,13 +268,16 @@ int main(int argc, char* argv[]) {
 	}
 	parse_file(argv[1]);
 	create_listening_sock();
+
+	printf("**testing test_send:\n");
 	test_send();
 	create_fwd_table();
-	node_interface *interface_pointer = interfaces;
+//	node_interface *interface_pointer = interfaces;
 	int i = 0;
 	for(i = 0; i < count - 1; i++) {
-		update_fwd_table(interfaces[i].ipAddr, interfaces[i].id, INFINITY);
-		printf("%s\t%d\t%s\n", ipAddrThis, interfaces[i].id, interfaces[i].ipAddr);
+//		printf("%s\t%d\t%s\n", ipAddrThis, interfaces[i].id, interfaces[i].vipRemote);
+		update_fwd_table(interfaces[i].vipRemote, interfaces[i].id, INFINITY);
+	printf("exited update_fwd_table\n");
 		send_RIP_request(interfaces[i].id, ipAddrThis, interfaces[i].ipAddr);
 	}
 /*	while (*interface_pointer->ipAddr != '\0') {
@@ -299,7 +302,7 @@ int main(int argc, char* argv[]) {
 	printf("\n**testing routes command:\n");
 	routes();
 	
-	while (1) {};
+	while (1) {}
 
 	close(*sock);
 
