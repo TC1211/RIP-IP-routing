@@ -20,15 +20,17 @@ extern int create_socket(int *sock);
 extern int bind_node_addr(int *sock, const char *addr, uint16_t port);
 extern int sock_send(int *sock, char *addr, uint16_t port, char* packet);
 
-#define MAXENTRY 1024
+#define MAX_ENTRY 1024
+#define MAX_LINE 256
+#define MAX_CHAR 32
 
 typedef struct node_interface {
 	int id;
 	int port;
-	char ipAddr[32];
-	char vipThis[32];
-	char vipRemote[32];
-	char status[32]; //up by default
+	char ipAddr[MAX_CHAR];
+	char vipThis[MAX_CHAR];
+	char vipRemote[MAX_CHAR];
+	char status[MAX_CHAR]; //up by default
 } node_interface;
 
 struct thread_arg_list{
@@ -39,15 +41,15 @@ struct thread_arg_list{
 };
 
 node_interface *interfaces;
-pthread_t children_tid[1024];
+pthread_t children_tid[MAX_ENTRY];
 int count;
 int *sock;
-char ipAddrThis[32];
+char ipAddrThis[MAX_CHAR];
 
 int parse_file(char *path){
-	interfaces = (node_interface *)malloc(sizeof(node_interface));
+	interfaces = (node_interface *)malloc(MAX_ENTRY * sizeof(node_interface));
 	node_interface *current = interfaces;
-	char line[256];
+	char line[MAX_LINE];
 	char *split, *ipAddr, *vipThis, *vipRemote;
 	int port;
 
@@ -123,7 +125,7 @@ int parse_file(char *path){
 
 int create_listening_sock(){
 	int i = 0;
-	while(interfaces[i].id != 0 && i < MAXENTRY){
+	while(interfaces[i].id != 0 && i < MAX_ENTRY){
 		char *received_packet;
 		received_packet = (char *)malloc(64000);
 		
@@ -231,6 +233,7 @@ int send_RIP_response(int id, char *ipAddrSource, char *ipAddrDest) {
 int routes() {
 	//interact with IPRIPInterface to find and print all next-hops; consult table
 	fwd_entry *pointer = fwd_table;
+	printf("got here\n");
 	while(pointer->nextHopInterfaceID != 0) {
 		printf("%d\n",pointer->nextHopInterfaceID);
 		printf("%s\t%d\t%d\n", pointer->destIPAddr, pointer->nextHopInterfaceID, pointer->cost);
@@ -249,12 +252,14 @@ int send_message(char *vip, char *message) {
 }
 
 int test_send(){
+	printf("got into test_send\n");
 	int i = 0;
 	while(i != 10){
 		char packet[512] = "hello world\n";
 		sock_send(sock, "127.0.0.1", 17001, packet);
 		i++;
 	}
+	printf("got out of test_send\n");
 	return 0;
 }
 
@@ -291,4 +296,3 @@ int main(int argc, char* argv[]) {
 
 	return 0;
 }
-
