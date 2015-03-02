@@ -46,8 +46,7 @@ char ipAddrThis[32];
 
 int parse_file(char *path){
 	interfaces = (node_interface *)malloc(sizeof(node_interface));
-	node_interface *current;
-	current = interfaces;
+	node_interface *current = interfaces;
 	char line[256];
 	char *split, *ipAddr, *vipThis, *vipRemote;
 	int port;
@@ -116,7 +115,7 @@ int parse_file(char *path){
 			changeUpDown("up", 1);
 			changeUpDown("up", 2); //should fail in 1st run of else branch
 		}
-		printf("hehe\n");
+		count++;
 	}
 	fclose(fr);
 	return 0;
@@ -183,9 +182,9 @@ void *receive_func(void *arg) {
 
 int send_RIP_request(int id, char *ipAddrSrc, char *ipAddrDst) {
 	entry *entries = (entry *)malloc(sizeof(entry));
-//	int num_entries = 0; was throwing unused variable warning
+	int num_entries = 0; 
 	memset(entries, 0, sizeof(entries));
-//	ip_packet *ipPacket = construct_packet(num_entries, entries, 1, id, ipAddrSrc, ipAddrDst, INFINITY); was throwing unused variable warning
+	ip_packet *ipPacket = construct_packet(num_entries, entries, 1, id, ipAddrSrc, ipAddrDst, INFINITY); 
 
 	//send ipPacket here
 	free(entries);
@@ -202,7 +201,6 @@ int send_RIP_response(int id, char *ipAddrSource, char *ipAddrDest) {
 	while(interface_pointer->id != 0) {
 		fwd_pointer = fwd_table;
 		while (strcmp(fwd_pointer->destIPAddr, interface_pointer->ipAddr) != 0) {
-		//while (fwd_pointer->destIPAddr != interface_pointer->ipAddr) {
 			void *pointer;
 			pointer += sizeof(fwd_entry);
 			fwd_pointer = (fwd_entry *)pointer;
@@ -223,7 +221,7 @@ int send_RIP_response(int id, char *ipAddrSource, char *ipAddrDest) {
 		interface_pointer = (node_interface *)ipointer;
 	}
 	
-//	ip_packet *ipPacket = construct_packet(num_entries, entries, 2, id, ipAddrSource, ipAddrDest, INFINITY); was throwing unused variable warning
+	ip_packet *ipPacket = construct_packet(num_entries, entries, 2, id, ipAddrSource, ipAddrDest, INFINITY); 
 
 	//send ipPacket here
 	free(entries);
@@ -231,12 +229,22 @@ int send_RIP_response(int id, char *ipAddrSource, char *ipAddrDest) {
 }
 
 int routes() {
-	//interact with interface to find and print all next-hops; consult table
+	//interact with IPRIPInterface to find and print all next-hops; consult table
+	fwd_entry *pointer = fwd_table;
+	while(pointer->nextHopInterfaceID != 0) {
+		printf("%d\n",pointer->nextHopInterfaceID);
+		printf("%s\t%d\t%d\n", pointer->destIPAddr, pointer->nextHopInterfaceID, pointer->cost);
+		
+	void *temp = pointer;
+	temp += sizeof(fwd_entry);
+	pointer = (fwd_entry *)temp;
+	}
 	return 0;
 }
 
 int send_message(char *vip, char *message) {
 	//find appropriate next hop (consult table) and send
+	//must check to see whether next hop is up or down...
 	return 0;
 }
 
@@ -262,15 +270,20 @@ int main(int argc, char* argv[]) {
 	parse_file(argv[1]);
 	create_listening_sock();
 	test_send();
-/*	node_interface *interface_pointer = interfaces;
+	node_interface *interface_pointer = interfaces;
 
 	while (interface_pointer->id != 0) {
 		//update fwding table
-		update_fwd_table(interface_pointer->ipAddr, interface_pointer->ipAddr, INFINITY);
+		update_fwd_table(interface_pointer->ipAddr, interface_pointer->id, INFINITY);
 
 		//send RIP request
 		send_RIP_request(interface_pointer->id, ipAddrThis, interface_pointer->ipAddr);
-	}	*/
+		void *pointer = (void *)interface_pointer;
+		pointer += sizeof(node_interface);
+		interface_pointer = (node_interface *)pointer;
+	}
+
+	routes();
 	
 	while (1) {};
 

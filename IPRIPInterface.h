@@ -17,7 +17,7 @@
 
 typedef struct fwd_entry {
 	char *destIPAddr;
-	char *nextHopIP;
+	int nextHopInterfaceID;
 	int cost; 
 	time_t last_refresh;
 } fwd_entry;
@@ -25,6 +25,6 @@ typedef struct fwd_entry {
 struct fwd_entry *fwd_table; 
 
 ip_packet *construct_packet(int num_entries, entry *entries, int command, int id, char *ipAddrSource, char *ipAddrDest, uint8_t ttl);
-int update_fwd_table(char *destIPAddr, char *nextHopIP, int cost);
+int update_fwd_table(char *destIPAddr, int nextHopID, int cost);
 
 #endif

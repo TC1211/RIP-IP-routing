@@ -16,12 +16,12 @@ ip_packet *construct_packet(int num_entries, entry *entries, int command, int id
 	return ipPacket;
 }
 
-int update_fwd_table(char *destIPAddr, char *nextHopIP, int cost) {
+int update_fwd_table(char *destIPAddr, int nextHopID, int cost) {
 	fwd_entry *fwd_table_pointer = (fwd_entry *)fwd_table;
 	while (fwd_table_pointer->destIPAddr != 0) {
 		if (strcmp((const char*)fwd_table_pointer->destIPAddr, (const char*)destIPAddr) == 0) {
 			if (fwd_table_pointer->cost > cost) {
-				memcpy(fwd_table_pointer->nextHopIP, nextHopIP, sizeof(fwd_table_pointer->nextHopIP));
+				fwd_table_pointer->nextHopInterfaceID = nextHopID;
 				fwd_table_pointer->cost = cost;
 				fwd_table_pointer->last_refresh = time(NULL);
 				return 0;

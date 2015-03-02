@@ -1,6 +1,6 @@
 CC = gcc
 
-CFLAGS = -Wall -g
+CFLAGS = -g
 
 main: main.o IPRIPInterface.o UDPIPInterface.o UDPSocket.o
 	$(CC) -Wall -pthread -o main main.o UDPSocket.o ipsum.o IP.o RIP.o IPRIPInterface.o UDPIPInterface.o
