@@ -95,7 +95,7 @@ int parse_file(char *path){
 				printf("Incorrect file format\n");
 				return 1;
 			}
-			vipRemote = split;
+			vipRemote = strtok(split, "\n");
 			
 			printf("VIPTHIS: %s\n", vipThis);
 			printf("VIPREMOTE: %s\n", vipRemote);
@@ -227,12 +227,9 @@ int routes() {
 	//interact with IPRIPInterface to find and print all next-hops; consult table
 	fwd_entry *pointer = fwd_table;
 	while(pointer->nextHopInterfaceID != 0) {
+		printf("%s\t", pointer->destVIPAddr);
 		printf("%d\t", pointer->nextHopInterfaceID);
-		printf("%d\t", pointer->cost);
-		/*char print[sizeof(pointer->destIPAddr)];
-		memcpy(print, pointer->destIPAddr, sizeof(pointer->destIPAddr));
-		print[sizeof(pointer->destIPAddr)] = '\0';
-		printf("%s\t", print);*/
+		printf("%d\n", pointer->cost);
 		
 		void *temp = pointer;
 		temp += sizeof(fwd_entry);
@@ -272,23 +269,11 @@ int main(int argc, char* argv[]) {
 	printf("**testing test_send:\n");
 	test_send();
 	create_fwd_table();
-//	node_interface *interface_pointer = interfaces;
 	int i = 0;
 	for(i = 0; i < count - 1; i++) {
-//		printf("%s\t%d\t%s\n", ipAddrThis, interfaces[i].id, interfaces[i].vipRemote);
 		update_fwd_table(interfaces[i].vipRemote, interfaces[i].id, INFINITY);
-	printf("exited update_fwd_table\n");
 		send_RIP_request(interfaces[i].id, ipAddrThis, interfaces[i].ipAddr);
 	}
-/*	while (*interface_pointer->ipAddr != '\0') {
-		//update fwding table
-		update_fwd_table(interface_pointer->ipAddr, interface_pointer->id, INFINITY);
-		//send RIP request
-		send_RIP_request(interface_pointer->id, ipAddrThis, interface_pointer->ipAddr);
-		void *pointer = (void *)interface_pointer;
-		pointer += sizeof(node_interface);
-		interface_pointer = (node_interface *)pointer;
-*/
 	printf("\n**testing ifconfig command:\n");
 	ifconfig();
 
@@ -308,4 +293,3 @@ int main(int argc, char* argv[]) {
 
 	return 0;
 }
-
