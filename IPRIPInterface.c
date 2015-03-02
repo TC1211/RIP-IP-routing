@@ -23,25 +23,29 @@ int create_fwd_table() {
 
 int update_fwd_table(char *destIPAddr, int nextHopID, int cost) {
 	fwd_entry *pointer = (fwd_entry *)fwd_table;
-	while (pointer->destIPAddr != NULL) {
-		if (strcmp((const char*)pointer->destIPAddr, (const char*)destIPAddr) == 0) {
+	while (pointer->destIPAddr != '\0') {
+	printf("strcmp: d\n", strcmp(pointer->destIPAddr, destIPAddr));
+		if (strcmp(pointer->destIPAddr, destIPAddr) == 0) {
 			if (pointer->cost > cost) {
 				pointer->nextHopInterfaceID = nextHopID;
 				pointer->cost = cost;
 				pointer->last_refresh = time(NULL);
-				printf("%d\t%d\t\n",pointer->nextHopInterfaceID, pointer->cost);
+//				printf("%d\t%d\t\n",pointer->nextHopInterfaceID, pointer->cost);
 				return 0;
 			}
 		}
+		printf("passed by: %s\t%d\n", pointer->destIPAddr, pointer->cost);
 		void *iterator = (void *)pointer;
 		iterator += sizeof(fwd_entry);
 		pointer = (fwd_entry *)iterator; 
 	}
-	//entry not found in forwarding table; must add to table
+	//entry not found in forwarding table; must add to table	
 	fwd_entry *ent = (fwd_entry *)pointer;
 	memcpy(&ent->destIPAddr, destIPAddr, sizeof(ent->destIPAddr));
+	ent->nextHopInterfaceID = nextHopID;
 	ent->cost = cost;
 	ent->last_refresh = time(NULL);
+	printf("(entry not found) %d\t%s\t%d\n", nextHopID, destIPAddr, cost);
 	return 0;
 }
 

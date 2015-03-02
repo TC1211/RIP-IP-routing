@@ -110,12 +110,7 @@ int parse_file(char *path){
 			
 			void *temp = (void *)current;
 			temp += sizeof(node_interface);
-			current = (node_interface *)temp;
-		
-			//test:
-			ifconfig();
-			changeUpDown("up", 1);
-			changeUpDown("up", 2); //should fail in 1st run of else branch
+			current = (node_interface *)temp;			
 		}
 		count++;
 	}
@@ -150,17 +145,15 @@ int create_listening_sock(){
 
 int ifconfig() {
 	int i = 0;
-	for(i = 0; i < count; i++) {
+	for(i = 0; i < count - 1; i++) {
 		printf("%d\t%s\t%s\n", interfaces[i].id, interfaces[i].vipThis, interfaces[i].status);
-		//for testing:
-		//printf(" ipAddr: %s\tport: %d\n", interfaces[i].ipAddr, interfaces[i].port);
 	}
 	return 0;
 }
 
 int changeUpDown (char *upOrDown, int id) {
 	int i = 0;
-	for(i = 0; i < count; i++) {
+	for(i = 0; i < count - 1; i++) {
 		if(id == interfaces[i].id) {
 			strcpy(interfaces[i].status, upOrDown);
 			printf("Interface %d %s\n", interfaces[i].id, interfaces[i].status);
@@ -200,7 +193,7 @@ int send_RIP_response(int id, char *ipAddrSource, char *ipAddrDest) {
 	entry *entry_pointer = entries;
 	node_interface *interface_pointer = interfaces;
 	fwd_entry *fwd_pointer;
-	while(interface_pointer->id != 0) {
+	while(interface_pointer->ipAddr != '\0') {
 		fwd_pointer = fwd_table;
 		while (strcmp(fwd_pointer->destIPAddr, interface_pointer->ipAddr) != 0) {
 			void *pointer;
@@ -234,12 +227,16 @@ int routes() {
 	//interact with IPRIPInterface to find and print all next-hops; consult table
 	fwd_entry *pointer = fwd_table;
 	while(pointer->nextHopInterfaceID != 0) {
-		printf("%d\n",pointer->nextHopInterfaceID);
-		printf("%s\t%d\t%d\n", pointer->destIPAddr, pointer->nextHopInterfaceID, pointer->cost);
+		printf("%d\t", pointer->nextHopInterfaceID);
+		printf("%d\t", pointer->cost);
+		/*char print[sizeof(pointer->destIPAddr)];
+		memcpy(print, pointer->destIPAddr, sizeof(pointer->destIPAddr));
+		print[sizeof(pointer->destIPAddr)] = '\0';
+		printf("%s\t", print);*/
 		
-	void *temp = pointer;
-	temp += sizeof(fwd_entry);
-	pointer = (fwd_entry *)temp;
+		void *temp = pointer;
+		temp += sizeof(fwd_entry);
+		pointer = (fwd_entry *)temp;
 	}
 	return 0;
 }
@@ -274,7 +271,13 @@ int main(int argc, char* argv[]) {
 	test_send();
 	create_fwd_table();
 	node_interface *interface_pointer = interfaces;
-	while (*interface_pointer->ipAddr != '\0') {
+	int i = 0;
+	for(i = 0; i < count - 1; i++) {
+		update_fwd_table(interfaces[i].ipAddr, interfaces[i].id, INFINITY);
+		printf("%s\t%d\t%s\n", ipAddrThis, interfaces[i].id, interfaces[i].ipAddr);
+		send_RIP_request(interfaces[i].id, ipAddrThis, interfaces[i].ipAddr);
+	}
+/*	while (*interface_pointer->ipAddr != '\0') {
 		//update fwding table
 		update_fwd_table(interface_pointer->ipAddr, interface_pointer->id, INFINITY);
 		//send RIP request
@@ -282,11 +285,18 @@ int main(int argc, char* argv[]) {
 		void *pointer = (void *)interface_pointer;
 		pointer += sizeof(node_interface);
 		interface_pointer = (node_interface *)pointer;
+*/
+	printf("\n**testing ifconfig command:\n");
+	ifconfig();
 
-		printf("got here\n");
-	}
-	printf("outside while-loop in main\n");
+	printf("\n**testing up/down commands:\n");
+	printf("calling up on interface 1: ");	
+	changeUpDown("up", 1);
+	printf("calling up on interface 2: ");
+	changeUpDown("up", 2); 
+	printf("\t(should have failed for A.txt and C.txt)\n");
 
+	printf("\n**testing routes command:\n");
 	routes();
 	
 	while (1) {};
