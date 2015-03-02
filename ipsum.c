@@ -4,7 +4,6 @@
  Checksum for Internet Protocol family headers (C Version)
  From ping examples in W.Richard Stevens "UNIX NETWORK PROGRAMMING" book.
 ************************************************************/
-#include <inttypes.h>
 
 int ip_sum(char* packet, int n) {
   uint16_t *p = (uint16_t*)packet;

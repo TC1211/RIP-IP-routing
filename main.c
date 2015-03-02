@@ -7,7 +7,8 @@
 #include <stdint.h>
 #include <pthread.h>
 #include "UDPIPInterface.h"
-#include "IPRIPInterface.c"
+#include "UDPSocket.h"
+#include "IPRIPInterface.h"
 
 int parse_file(char *);
 int create_listening_sock();
@@ -15,17 +16,20 @@ int ifconfig();
 int changeUpDown();
 void *receive_func(void *);
 
-#define MAXENTRY 1024
-#define INFINITY 16
+extern int create_socket(int *sock);
+extern int bind_node_addr(int *sock, const char *addr, uint16_t port);
+extern int sock_send(int *sock, char *addr, uint16_t port, char* packet);
 
-struct node_interface {
+#define MAXENTRY 1024
+
+typedef struct node_interface {
 	int id;
 	int port;
 	char ipAddr[32];
 	char vipThis[32];
 	char vipRemote[32];
 	char status[32]; //up by default
-};
+} node_interface;
 
 struct thread_arg_list{
 	int *sock;
@@ -34,46 +38,23 @@ struct thread_arg_list{
 	char *received_packet;
 };
 
-struct node_interface interfaces[1024];
+node_interface *interfaces;
 pthread_t children_tid[1024];
 int count;
 int *sock;
 char ipAddrThis[32];
 
-int main(int argc, char* argv[]) {
-	if (argc > 2) {
-		printf("Incorrect input\n");
-		return 1;
-	}
-	parse_file(argv[1]);
-	create_listening_sock();
-	test_send();
-	struct node_interface *interface_pointer = interfaces;
-
-	while (interface_pointer->id != 0) {
-		//update fwding table
-		update_fwd_table(interface_pointer->ipAddr, interface_pointer->ipAddr, INFINITY);
-		//send RIP request
-		send_RIP_request(interface_pointer->id, ipAddrThis, interface_pointer->ipAddr);
-	}	
-	
-	while (1) {};
-
-	close(*sock);
-
-	return 0;
-}
-
 int parse_file(char *path){
-	struct node_interface *copy = interfaces;
+	interfaces = (node_interface *)malloc(sizeof(node_interface));
+	node_interface *current;
+	current = interfaces;
 	char line[256];
-	char *split, *colon, *ipAddr, *vipThis, *vipRemote;
+	char *split, *ipAddr, *vipThis, *vipRemote;
 	int port;
-	pid_t pid;
 
 	FILE *fr = fopen(path, "r");
 	count = 0;
-	while (fgets(line, sizeof(line), fr)) {
+	while (fgets(line, sizeof(line), fr) != NULL) {
 		printf("\n%s", line);
 		split = strtok(line, ":"); //segment before ":"
 
@@ -92,7 +73,6 @@ int parse_file(char *path){
 			port = (uint16_t) atoi(split);
 			printf("PORT: %d\n", port);
 
-			int on = 1;
 			sock = (int *)malloc(sizeof(int));
 			create_socket(sock);		
 			bind_node_addr(sock, ipAddr, (uint16_t) port);
@@ -116,21 +96,27 @@ int parse_file(char *path){
 			}
 			vipRemote = split;
 			
-			//create interface object
-			copy->id = count;
-			copy->port = port;
-			strcpy(copy->ipAddr, ipAddr);
-			strcpy(copy->vipThis, vipThis);
-			strcpy(copy->vipRemote, vipRemote);
-			strcpy(copy->status, "up");
-			copy++;
+			printf("VIPTHIS: %s\n", vipThis);
+			printf("VIPREMOTE: %s\n", vipRemote);
 
+			//create interface object
+			current->id = count;
+			current->port = port;
+			strcpy(current->ipAddr, ipAddr);
+			strcpy(current->vipThis, vipThis);
+			strcpy(current->vipRemote, vipRemote);
+			strcpy(current->status, "down");
+			
+			void *temp = (void *)current;
+			temp += sizeof(node_interface);
+			current = (node_interface *)temp;
+		
 			//test:
 			ifconfig();
-			changeUpDown("down", 1);
-			changeUpDown("down", 2); //should fail in 1st run of else branch
+			changeUpDown("up", 1);
+			changeUpDown("up", 2); //should fail in 1st run of else branch
 		}
-		count++;
+		printf("hehe\n");
 	}
 	fclose(fr);
 	return 0;
@@ -166,7 +152,7 @@ int ifconfig() {
 	for(i = 0; i < count; i++) {
 		printf("%d\t%s\t%s\n", interfaces[i].id, interfaces[i].vipThis, interfaces[i].status);
 		//for testing:
-		printf(" ipAddr: %s\tport: %d\n", interfaces[i].ipAddr, interfaces[i].port);
+		//printf(" ipAddr: %s\tport: %d\n", interfaces[i].ipAddr, interfaces[i].port);
 	}
 	return 0;
 }
@@ -195,29 +181,30 @@ void *receive_func(void *arg) {
 }
 
 
-int send_RIP_request(int id, char ipAddrSrc, char ipAddrDst) {
-	struct entry *entries[1024];
-	int entries = 0; 
+int send_RIP_request(int id, char *ipAddrSrc, char *ipAddrDst) {
+	entry *entries = (entry *)malloc(sizeof(entry));
+//	int num_entries = 0; was throwing unused variable warning
 	memset(entries, 0, sizeof(entries));
-	struct ip_packet *ipPacket = construct_IP_packet(num_entries, entries, 1, id, ipAddrSrc, ipAddrDst, INFINITY);
+//	ip_packet *ipPacket = construct_packet(num_entries, entries, 1, id, ipAddrSrc, ipAddrDst, INFINITY); was throwing unused variable warning
 
-	//send it here
-
+	//send ipPacket here
+	free(entries);
 	return 0;
 }
 
-int send_RIP_response(int id, char ipAddrSource, char ipAddrDest) {
-	struct entry *entries[1024];
+int send_RIP_response(int id, char *ipAddrSource, char *ipAddrDest) {
+	entry *entries = (entry *)malloc(sizeof(entry));
 	int num_entries = 0;
 	
-	struct entry *entry_pointer = entries;
-	struct node_interface *interface_pointer = interfaces;
-	struct fwd_entry *fwd_pointer;
+	entry *entry_pointer = entries;
+	node_interface *interface_pointer = interfaces;
+	fwd_entry *fwd_pointer;
 	while(interface_pointer->id != 0) {
 		fwd_pointer = fwd_table;
-		while (fwd_pointer->destIPAddr != interface_pointer->ipAddr) {
+		while (strcmp(fwd_pointer->destIPAddr, interface_pointer->ipAddr) != 0) {
+		//while (fwd_pointer->destIPAddr != interface_pointer->ipAddr) {
 			void *pointer;
-			pointer += sizeof(struct fwd_entry);
+			pointer += sizeof(fwd_entry);
 			fwd_pointer = (fwd_entry *)pointer;
 		}
 		if (fwd_pointer->destIPAddr <= 0) {
@@ -227,39 +214,68 @@ int send_RIP_response(int id, char ipAddrSource, char ipAddrDest) {
 		entry_pointer->cost = (uint32_t) fwd_pointer->cost;
 		entry_pointer->address = (uint32_t) inet_addr(fwd_pointer->destIPAddr);
 		void *epointer;
-		epointer += sizeof(struct entry);
-		entry_pointer = (struct entry) epointer;
+		epointer += sizeof(entry);
+		entry_pointer = (entry *) epointer;
 		num_entries++;
 
 		void *ipointer;
-		ipointer += sizeof(struct node_interface);
-		interface_pointer = (struct node_interface *)ipointer;
+		ipointer += sizeof(node_interface);
+		interface_pointer = (node_interface *)ipointer;
 	}
 	
-	struct ip_packet *ipPacket = construct_IP_packet(num_entries, entries, 2, id, ipAddrSrc, ipAddrDst, INFINITY);
+//	ip_packet *ipPacket = construct_packet(num_entries, entries, 2, id, ipAddrSource, ipAddrDest, INFINITY); was throwing unused variable warning
 
-	//send it here
-
+	//send ipPacket here
+	free(entries);
 	return 0;
 }
 
 int routes() {
 	//interact with interface to find and print all next-hops; consult table
+	return 0;
 }
 
 int send_message(char *vip, char *message) {
 	//find appropriate next hop (consult table) and send
+	return 0;
 }
 
 int test_send(){
 	int i = 0;
 	while(i != 10){
-		char packet[512] = "baka baka baka!!\n";
+		char packet[512] = "hello world\n";
 		sock_send(sock, "127.0.0.1", 17001, packet);
 		i++;
 	}
+	return 0;
 }
 
 int receive_message() {
-
+	return 0;
 }
+
+int main(int argc, char* argv[]) {
+	if (argc > 2) {
+		printf("Incorrect input\n");
+		return 1;
+	}
+	parse_file(argv[1]);
+	create_listening_sock();
+	test_send();
+/*	node_interface *interface_pointer = interfaces;
+
+	while (interface_pointer->id != 0) {
+		//update fwding table
+		update_fwd_table(interface_pointer->ipAddr, interface_pointer->ipAddr, INFINITY);
+
+		//send RIP request
+		send_RIP_request(interface_pointer->id, ipAddrThis, interface_pointer->ipAddr);
+	}	*/
+	
+	while (1) {};
+
+	close(*sock);
+
+	return 0;
+}
+

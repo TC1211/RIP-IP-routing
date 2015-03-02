@@ -1,11 +1,26 @@
-#include <stdio.h>
-#include <string.h>
 #include "IP.h"
 
-/*struct ip_packet {
-	struct ip header;
-	char payload[IP_MAXPACKET - sizeof(struct ip)];
-};*/
+//for attaching IP header to a packet
+ip_packet *construct_IP_packet(char *ripPacket, uint16_t id, uint32_t ipAddrSrc, uint32_t ipAddrDest, uint8_t ttl) {
+//ip_packet *construct_IP_packet(rip_packet *ripPacket, uint16_t id, uint32_t ipAddrSrc, uint32_t ipAddrDest, uint8_t ttl) {
+	ip_packet *ipPacket = (ip_packet *)malloc(sizeof(ip_packet));
+	ip_packet *pointer = ipPacket;
+	memcpy(pointer->payload, ripPacket, sizeof(pointer->payload));
+
+	pointer->header.ip_id = id;
+	void *pointer_src = &pointer->header.ip_src;
+	memcpy(pointer_src, &ipAddrSrc, sizeof(pointer->header.ip_src));
+	void *pointer_dst = &pointer->header.ip_dst;
+	memcpy(pointer_dst, &ipAddrDest, sizeof(pointer->header.ip_dst));
+
+	char *header_char = (char *)malloc(sizeof(struct ip));
+	memcpy(header_char, &pointer->header, sizeof(struct ip));
+	pointer->header.ip_sum = ip_sum(header_char, (int) sizeof(struct ip));
+
+	pointer->header.ip_ttl = ttl; 
+
+	return ipPacket;
+}
 
 int is_RIP(struct ip *header) {
 	//check whether to deliver to RIP
