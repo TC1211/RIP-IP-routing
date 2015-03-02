@@ -16,23 +16,29 @@ ip_packet *construct_packet(int num_entries, entry *entries, int command, int id
 	return ipPacket;
 }
 
+int create_fwd_table() {
+	fwd_table = (fwd_entry *)malloc(MAX_ENTRY * sizeof(fwd_entry));
+	return 0;
+}
+
 int update_fwd_table(char *destIPAddr, int nextHopID, int cost) {
-	fwd_entry *fwd_table_pointer = (fwd_entry *)fwd_table;
-	while (fwd_table_pointer->destIPAddr != 0) {
-		if (strcmp((const char*)fwd_table_pointer->destIPAddr, (const char*)destIPAddr) == 0) {
-			if (fwd_table_pointer->cost > cost) {
-				fwd_table_pointer->nextHopInterfaceID = nextHopID;
-				fwd_table_pointer->cost = cost;
-				fwd_table_pointer->last_refresh = time(NULL);
+	fwd_entry *pointer = (fwd_entry *)fwd_table;
+	while (pointer->destIPAddr != NULL) {
+		if (strcmp((const char*)pointer->destIPAddr, (const char*)destIPAddr) == 0) {
+			if (pointer->cost > cost) {
+				pointer->nextHopInterfaceID = nextHopID;
+				pointer->cost = cost;
+				pointer->last_refresh = time(NULL);
+				printf("%d\t%d\t\n",pointer->nextHopInterfaceID, pointer->cost);
 				return 0;
 			}
 		}
-		void *iterator = (void *)fwd_table_pointer;
+		void *iterator = (void *)pointer;
 		iterator += sizeof(fwd_entry);
-		fwd_table_pointer = (fwd_entry *)iterator; 
+		pointer = (fwd_entry *)iterator; 
 	}
 	//entry not found in forwarding table; must add to table
-	fwd_entry *ent = (fwd_entry *)fwd_table_pointer;
+	fwd_entry *ent = (fwd_entry *)pointer;
 	memcpy(&ent->destIPAddr, destIPAddr, sizeof(ent->destIPAddr));
 	ent->cost = cost;
 	ent->last_refresh = time(NULL);

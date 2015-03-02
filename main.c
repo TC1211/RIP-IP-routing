@@ -19,8 +19,8 @@ void *receive_func(void *);
 extern int create_socket(int *sock);
 extern int bind_node_addr(int *sock, const char *addr, uint16_t port);
 extern int sock_send(int *sock, char *addr, uint16_t port, char* packet);
+extern int create_fwd_table();
 
-#define MAX_ENTRY 1024
 #define MAX_LINE 256
 #define MAX_CHAR 32
 
@@ -183,13 +183,13 @@ void *receive_func(void *arg) {
 
 
 int send_RIP_request(int id, char *ipAddrSrc, char *ipAddrDst) {
-	entry *entries = (entry *)malloc(sizeof(entry));
+	entry *ent = (entry *)malloc(sizeof(entry));
 	int num_entries = 0; 
-	memset(entries, 0, sizeof(entries));
-	ip_packet *ipPacket = construct_packet(num_entries, entries, 1, id, ipAddrSrc, ipAddrDst, INFINITY); 
+	memset(ent, 0, sizeof(ent));
+	ip_packet *ipPacket = construct_packet(num_entries, ent, 1, id, ipAddrSrc, ipAddrDst, INFINITY); 
 
 	//send ipPacket here
-	free(entries);
+	free(ent);
 	return 0;
 }
 
@@ -233,7 +233,6 @@ int send_RIP_response(int id, char *ipAddrSource, char *ipAddrDest) {
 int routes() {
 	//interact with IPRIPInterface to find and print all next-hops; consult table
 	fwd_entry *pointer = fwd_table;
-	printf("got here\n");
 	while(pointer->nextHopInterfaceID != 0) {
 		printf("%d\n",pointer->nextHopInterfaceID);
 		printf("%s\t%d\t%d\n", pointer->destIPAddr, pointer->nextHopInterfaceID, pointer->cost);
@@ -252,14 +251,12 @@ int send_message(char *vip, char *message) {
 }
 
 int test_send(){
-	printf("got into test_send\n");
 	int i = 0;
 	while(i != 10){
 		char packet[512] = "hello world\n";
 		sock_send(sock, "127.0.0.1", 17001, packet);
 		i++;
 	}
-	printf("got out of test_send\n");
 	return 0;
 }
 
@@ -275,18 +272,20 @@ int main(int argc, char* argv[]) {
 	parse_file(argv[1]);
 	create_listening_sock();
 	test_send();
+	create_fwd_table();
 	node_interface *interface_pointer = interfaces;
-
-	while (interface_pointer->id != 0) {
+	while (*interface_pointer->ipAddr != '\0') {
 		//update fwding table
 		update_fwd_table(interface_pointer->ipAddr, interface_pointer->id, INFINITY);
-
 		//send RIP request
 		send_RIP_request(interface_pointer->id, ipAddrThis, interface_pointer->ipAddr);
 		void *pointer = (void *)interface_pointer;
 		pointer += sizeof(node_interface);
 		interface_pointer = (node_interface *)pointer;
+
+		printf("got here\n");
 	}
+	printf("outside while-loop in main\n");
 
 	routes();
 	
@@ -296,3 +295,4 @@ int main(int argc, char* argv[]) {
 
 	return 0;
 }
+

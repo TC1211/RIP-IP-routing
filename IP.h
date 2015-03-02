@@ -10,7 +10,7 @@
 
 typedef struct ip_packet {
 	struct ip header;
-	char payload[IP_MAXPACKET-sizeof(struct ip)];
+	char payload[IP_MAXPACKET - sizeof(struct ip)];
 } ip_packet; 
 
 ip_packet *construct_IP_packet(char *ripPacket, uint16_t id, uint32_t ipAddrSrc, uint32_t ipAddrDest, uint8_t ttl);
