@@ -54,7 +54,7 @@ int recv_sockaddr(int *sock,char *addr, uint16_t port, struct sockaddr_in *recei
 	return 0;
 }
 
-int sock_recv(int *sock,struct sockaddr_in *receivedfrom_addr, char *received_packet){
+char *sock_recv(int *sock,struct sockaddr_in *receivedfrom_addr, char *received_packet){
 	int recvlen = 0;
 	socklen_t fromlen;
 	
@@ -65,7 +65,6 @@ int sock_recv(int *sock,struct sockaddr_in *receivedfrom_addr, char *received_pa
         if (recvlen > 0) {
             	received_packet[recvlen] = 0;
                 printf("received message: \"%s\"\n", received_packet);
-		return 0;
         }
-	return 1;
+	return received_packet;
 }

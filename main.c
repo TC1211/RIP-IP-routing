@@ -24,6 +24,7 @@ int routes(); //routes command
 int send_updates(); //to be called for sending either triggered updates or periodic updates
 int send_message(char *vipRemote, char *message); //create and send message (non-RIP)
 int test_send();
+int receive_RIP_packet(rip_packet *packet);
 
 
 extern int create_socket(int *sock);
@@ -178,14 +179,15 @@ int changeUpDown (char *upOrDown, int id) {
 /* for now its just printing but eventually all receives must be dealt with here */
 void *receive_func(ip_packet *packet) {
 	struct thread_arg_list *args = (struct thread_arg_list *)packet;
+  	char *rec = set_up_recv_sock(args->sock, args->addr, args->port, args->received_packet);
+	printf("%s\n", rec);
 	int is_RIP = is_RIP_packet(&packet->header);
 	if (is_RIP == 1) {
 		struct ip *header = &packet->header;
-		
+		receive_RIP_packet((rip_packet *)packet->payload);
 	} else {
 		
 	}
-  	set_up_recv_sock(args->sock, args->addr, args->port, args->received_packet);
  	
   	pthread_exit(NULL);
 }
@@ -336,6 +338,20 @@ int test_send() {
 	return 0;
 }
 
+int receive_RIP_packet(rip_packet *packet) {
+	printf("received info: %d\t%d\n", packet->command, packet->num_entries);
+	if (packet->command == 1) { //request
+		
+	} else if (packet->command == 2) { //response
+
+	} else {
+		printf("Error in RIP packet input; command not valid\n");	
+		return 1;
+	}
+	return 0;
+}
+
+
 int main(int argc, char* argv[]) {
 	if (argc > 2) {
 		printf("Incorrect input\n");
@@ -344,9 +360,9 @@ int main(int argc, char* argv[]) {
 	parse_file(argv[1]);
 	create_listening_sock();
 
-/*	printf("**testing test_send:\n");
+	printf("**testing test_send:\n");
 	test_send();
-*/	create_fwd_table();
+	create_fwd_table();
 	int i = 0;
 	for(i = 0; i < count - 1; i++) {
 		update_fwd_table(interfaces[i].vipRemote, interfaces[i].id, INFINITY);
