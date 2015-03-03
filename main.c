@@ -179,9 +179,10 @@ int send_RIP_request(int id, char *ipAddrSrc, char *ipAddrDst) {
 	entry *ent = (entry *)malloc(sizeof(entry));
 	int num_entries = 0; 
 	memset(ent, 0, sizeof(ent));
-	ip_packet *ipPacket = construct_packet(num_entries, ent, 1, id, ipAddrSrc, ipAddrDst, INFINITY); 
+	ip_packet *ipPacket = construct_RIP_packet_intf(num_entries, ent, 1, id, ipAddrSrc, ipAddrDst, INFINITY); 
 
 	//send ipPacket here
+
 	free(ent);
 	return 0;
 }
@@ -216,9 +217,10 @@ int send_RIP_response(int id, char *ipAddrSource, char *ipAddrDest) {
 		interface_pointer = (node_interface *)ipointer;
 	}
 	
-	ip_packet *ipPacket = construct_packet(num_entries, entries, 2, id, ipAddrSource, ipAddrDest, INFINITY); 
+	ip_packet *ipPacket = construct_RIP_packet_intf(num_entries, entries, 2, id, ipAddrSource, ipAddrDest, INFINITY); 
 
 	//send ipPacket here
+
 	free(entries);
 	return 0;
 }
@@ -242,6 +244,14 @@ int send_message(char *vipRemote, char *message) {
 	//find appropriate next hop (consult table) and send
 	//must check to see whether next hop is up or down...
 	//also change to down
+	printf("%s: %s\n", vipRemote, message);
+	int i = 0;
+	for (i = 0; i < count - 1; i++) {
+		if (strcmp(interfaces[i].vipRemote, vipRemote) == 0) {
+//			printf("found vipRemote %s\n", interfaces[i].vipRemote);
+			ip_packet *ipPacket = construct_nonRIP_packet_intf(message, interfaces[i].id, ipAddrThis, interfaces[i].ipAddr, INFINITY); 
+		}
+	}
 	return 0;
 }
 
@@ -255,10 +265,6 @@ int test_send(){
 	return 0;
 }
 
-int receive_message() {
-	return 0;
-}
-
 int main(int argc, char* argv[]) {
 	if (argc > 2) {
 		printf("Incorrect input\n");
@@ -268,17 +274,17 @@ int main(int argc, char* argv[]) {
 	create_listening_sock();
 
 /*	printf("**testing test_send:\n");
-*/	test_send();
-	create_fwd_table();
+	test_send();
+*/	create_fwd_table();
 	int i = 0;
 	for(i = 0; i < count - 1; i++) {
 		update_fwd_table(interfaces[i].vipRemote, interfaces[i].id, INFINITY);
 		send_RIP_request(interfaces[i].id, ipAddrThis, interfaces[i].ipAddr);
 	}
-	printf("\n**testing ifconfig command:\n");
+/*	printf("\n**testing ifconfig command:\n");
 	ifconfig();
 
-/*	printf("\n**testing up/down commands:\n");
+	printf("\n**testing up/down commands:\n");
 	printf("calling up on interface 1: ");	
 	changeUpDown("up", 1);
 	printf("calling up on interface 2: ");

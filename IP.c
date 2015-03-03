@@ -1,14 +1,17 @@
 #include "IP.h"
 
-//for attaching IP header to a packet
-ip_packet *construct_IP_packet(char *ripPacket, uint16_t id, uint32_t ipAddrSrc, uint32_t ipAddrDest, uint8_t ttl) {
+//RIP packets
+ip_packet *construct_IP_packet(char *packet, uint16_t id, uint32_t ipAddrSrc, uint32_t ipAddrDest, uint8_t ttl) {
 	ip_packet *ipPacket = (ip_packet *)malloc(sizeof(ip_packet));
 	ip_packet *pointer = ipPacket;
 
 	unsigned long int temp;
-	if(sizeof(ripPacket) >= sizeof(ipPacket->payload)) temp = sizeof(ipPacket->payload);
-	else temp = sizeof(ripPacket);
-	memcpy(pointer->payload, ripPacket, temp); 
+	if(sizeof(packet) >= sizeof(ipPacket->payload)) {
+		temp = sizeof(ipPacket->payload);
+	} else {
+		temp = sizeof(packet);
+	}
+	memcpy(pointer->payload, packet, temp); 
 
 	pointer->header.ip_id = id;
 	void *pointer_src = &pointer->header.ip_src;

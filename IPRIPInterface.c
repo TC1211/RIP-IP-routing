@@ -1,7 +1,17 @@
 #include "IPRIPInterface.h"
 
-//for constructing a full packet
-ip_packet *construct_packet(int num_entries, entry *entries, int command, int id, char *ipAddrSource, char *ipAddrDest, uint8_t ttl) { 
+//for constructing a full nonRIP packet encapsulated in IP
+ip_packet *construct_nonRIP_packet_intf(char *message, int id, char *ipAddrSource, char *ipAddrDest, uint8_t ttl) {
+	uint32_t ipAddrSrc = (uint32_t) inet_addr(ipAddrSource);
+	uint32_t ipAddrDst = (uint32_t) inet_addr(ipAddrDest);
+	uint16_t id_in = (uint16_t) id;
+	uint8_t ttl_in = (uint8_t) ttl;
+	ip_packet *packet = construct_IP_packet(message, id_in, ipAddrSrc, ipAddrDst, ttl_in);
+	return packet;
+}
+
+//for constructing a full RIP packet encapsulated in IP
+ip_packet *construct_RIP_packet_intf(int num_entries, entry *entries, int command, int id, char *ipAddrSource, char *ipAddrDest, uint8_t ttl) { 
 	uint16_t command_in = (uint16_t) command;
 	uint16_t num_entries_in = (uint16_t) num_entries;
 	uint32_t ipAddrSrc = (uint32_t) inet_addr(ipAddrSource);
