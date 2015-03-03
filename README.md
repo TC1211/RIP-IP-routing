@@ -4,7 +4,7 @@ Router implementation, implementing IP and RIP on top of UDP
 Tianchan Dong, Grace Chen
 ## Implementation Details
 #### Main Class
-The main class is where the threads are housed; all other classes are accessed by the threads when needed. The main class provides functionality for parsing node files and setting up lists of node interface objects upon startup. Main.c is also responsible for accepting input from the terminal and performing whatever command was entered by the user.
+The main class is where the threads are housed; all other classes are accessed by the threads when needed. The main class provides functionality for parsing node files and setting up lists of node interface objects upon startup. Main.c is also responsible for accepting input from the terminal and performing whatever command was entered by the user; the main() method in the main class sets up all necessary tables before entering a while (1) loop to accept commands, as well as periodically check for and send updates on its topography.
 #### RIP
 The RIP class defines the RIP packet and entry struct used to store information about a neighbor. The RIP class provides functionality for constructing a list of such entries to be encapsulated by an RIP packet.
 #### IP

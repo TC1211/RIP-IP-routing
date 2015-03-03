@@ -106,7 +106,7 @@ int parse_file(char *path){
 			strcpy(current->ipAddr, ipAddr);
 			strcpy(current->vipThis, vipThis);
 			strcpy(current->vipRemote, vipRemote);
-			strcpy(current->status, "down");
+			strcpy(current->status, "up");
 			
 			void *temp = (void *)current;
 			temp += sizeof(node_interface);
@@ -238,9 +238,10 @@ int routes() {
 	return 0;
 }
 
-int send_message(char *vip, char *message) {
+int send_message(char *vipRemote, char *message) {
 	//find appropriate next hop (consult table) and send
 	//must check to see whether next hop is up or down...
+	//also change to down
 	return 0;
 }
 
@@ -266,8 +267,8 @@ int main(int argc, char* argv[]) {
 	parse_file(argv[1]);
 	create_listening_sock();
 
-	printf("**testing test_send:\n");
-	test_send();
+/*	printf("**testing test_send:\n");
+*/	test_send();
 	create_fwd_table();
 	int i = 0;
 	for(i = 0; i < count - 1; i++) {
@@ -277,7 +278,7 @@ int main(int argc, char* argv[]) {
 	printf("\n**testing ifconfig command:\n");
 	ifconfig();
 
-	printf("\n**testing up/down commands:\n");
+/*	printf("\n**testing up/down commands:\n");
 	printf("calling up on interface 1: ");	
 	changeUpDown("up", 1);
 	printf("calling up on interface 2: ");
@@ -286,10 +287,43 @@ int main(int argc, char* argv[]) {
 
 	printf("\n**testing routes command:\n");
 	routes();
-	
-	while (1) {}
+*/	
+	while (1) {
+		printf("\n# Enter a command: ");
+		char *input = (char *)malloc(sizeof(char) * (1400 - sizeof(struct ip)));
+		char *input_orig = (char *)malloc(sizeof(char) * (1400 - sizeof(struct ip)));
+		fgets(input, 1400 - sizeof(struct ip), stdin);
+		memcpy(input_orig, input, 1400 - sizeof(struct ip));
+		
+		char *newline = strchr(input, '\n');
+		if (newline) {
+			*newline = 0;
+		}
+		char *token = strtok(input, " ");
+		if (token == NULL) {
+			printf("Error in input format\n");
+			break;
+		}
+		if (strcmp(token, "ifconfig") == 0) {
+			ifconfig();
+		} else if (strcmp(token, "routes") == 0) {
+			routes();
+		} else if (strcmp(token, "up") == 0 || strcmp(token, "down") == 0) {
+			char *upOrDown = token;
+			char *temp = strtok(NULL, " ");
+			int interface = atoi(temp);
+			changeUpDown(upOrDown, interface);
+		} else if (strcmp(token, "send") == 0) {
+			char *vipRemote = strtok(NULL, " ");
+			char *message = (char *)malloc(1400 - sizeof(struct ip));
+			strncpy(message, (void *)input_orig + 6 + strlen(vipRemote), 1400 - sizeof(struct ip));
+			send_message(vipRemote, message);
+		} 
+		
+	}
 
 	close(*sock);
 
 	return 0;
 }
+
