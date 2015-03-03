@@ -39,9 +39,9 @@ int is_RIP(struct ip *header) {
 
 int process_header_for_forwarding(struct ip *header) {
 	//Decrement TTL
-	int ttl = (int) header->ip_ttl;
+	u_int8_t ttl = header->ip_ttl;
 	ttl -= 1;
-	unsigned char ttl_uchar = (unsigned char) ttl;
+	u_int8_t ttl_uchar = (u_int8_t) ttl;
 	header->ip_ttl = ttl_uchar;
 
 	//Recompute Checksum
