@@ -12,9 +12,19 @@
 
 int parse_file(char *);
 int create_listening_sock();
-int ifconfig();
-int changeUpDown();
-void *receive_func(void *);
+int ifconfig(); //ifconfig command
+int changeUpDown(); //changeUpDown command
+void *receive_func(ip_packet *);
+ip_packet *construct_SHRP_packet(int id, char *ipAddrSource, char *ipAddrSHRP); //creates 
+	//RIP packet with poison reverse; must be called for each interface that is up
+int send_RIP_response(char *ipAddrDest); //send RIP response packet to whoever send you a 
+	//request, NOT to all of your neighbors
+int send_RIP_request(int id, char *ipAddrSrc, char *ipAddrDst);
+int routes(); //routes command
+int send_updates(); //to be called for sending either triggered updates or periodic updates
+int send_message(char *vipRemote, char *message); //create and send message (non-RIP)
+int test_send();
+
 
 extern int create_socket(int *sock);
 extern int bind_node_addr(int *sock, const char *addr, uint16_t port);
@@ -133,7 +143,7 @@ int create_listening_sock(){
 		arg_list->received_packet = received_packet;
 		//create thread
 		int result;		
-		if((result = pthread_create(&children_tid[i], NULL, receive_func,arg_list))){
+		if((result = pthread_create(&children_tid[i], NULL, (void *)receive_func,arg_list))){
 		perror("Create thread Failed");
 		return 1;
 		}	
@@ -157,7 +167,7 @@ int changeUpDown (char *upOrDown, int id) {
 		if(id == interfaces[i].id) {
 			strcpy(interfaces[i].status, upOrDown);
 			printf("Interface %d %s\n", interfaces[i].id, interfaces[i].status);
-			//triggered updates here
+			send_updates(); //triggered updates here
 			return 0;
 		}
 	}
@@ -166,62 +176,101 @@ int changeUpDown (char *upOrDown, int id) {
 }
 
 /* for now its just printing but eventually all receives must be dealt with here */
-void *receive_func(void *arg) {
-	struct thread_arg_list *args = (struct thread_arg_list *)arg;
-
-  	set_up_recv_sock(args->sock,args->addr, args->port, args->received_packet);
+void *receive_func(ip_packet *packet) {
+	struct thread_arg_list *args = (struct thread_arg_list *)packet;
+	int is_RIP = is_RIP_packet(&packet->header);
+	if (is_RIP == 1) {
+		struct ip *header = &packet->header;
+		
+	} else {
+		
+	}
+  	set_up_recv_sock(args->sock, args->addr, args->port, args->received_packet);
  	
   	pthread_exit(NULL);
 }
 
+ip_packet *construct_SHRP_packet(int id, char *ipAddrSource, char *ipAddrSHRP) {
+	//for each interface, if nexthop in fwd_table is ipAddrSHRP, use cost = INFINITY
+	entry *entries = (entry *)malloc(MAX_ENTRY * sizeof(entry)); //RIP entries
+	int num_entries = 0;
+	
+	entry *entry_pointer = (entry *)entries;
+	node_interface *interface_pointer = (node_interface *)interfaces;
+	fwd_entry *fwd_pointer;
 
-int send_RIP_request(int id, char *ipAddrSrc, char *ipAddrDst) {
-	entry *ent = (entry *)malloc(sizeof(entry));
-	int num_entries = 0; 
-	memset(ent, 0, sizeof(ent));
-	ip_packet *ipPacket = construct_RIP_packet_intf(num_entries, ent, 1, id, ipAddrSrc, ipAddrDst, INFINITY); 
+	//find interface ID corresponding to ipAddrSHRP:
+	node_interface *shrp = (node_interface *)interfaces;
+	while (strcmp(shrp->ipAddr, ipAddrSHRP) != 0) {
+		void *temp = (void *)shrp;
+		temp += sizeof(node_interface);
+		shrp = (node_interface *)temp;
+	}
+	int idSHRP = shrp->id; //interface ID for all routes with next hop = SHRP node
+	
+	//for each interface:
+	while (interface_pointer->id != 0) {
+		//find corresponding fwd_table entry:
+		fwd_pointer = (fwd_entry *)fwd_table;
+		while (fwd_pointer->nextHopInterfaceID != interface_pointer->id) {
+			void *temp = (void *)fwd_pointer;
+			temp += sizeof(fwd_entry);
+			fwd_pointer = (fwd_entry *)temp;
+		}
+		//if interface is up:
+		if (strcmp(interface_pointer->status, "up") == 0) {
+			//if fwd table entry's next hop interface ID == SHRP interface ID:
+			if (fwd_pointer->nextHopInterfaceID == idSHRP) {
+				//set cost to infinity
+				entry_pointer->cost = INFINITY;
+			} else {
+				//otherwise set cost to (current cost) + 1
+				entry_pointer->cost = fwd_pointer->cost + 1;
+			}
+			//store the remote VIP address in entry as well
+			entry_pointer->address = (uint32_t) inet_addr(fwd_pointer->destVIPAddr);
+			
+			//increment current place in the list of entries
+			void *temp = (void *)entry_pointer;
+			temp += sizeof(entry);
+			entry_pointer = (entry *)temp;
+			
+			//increment number of entries
+			num_entries++;
+		}
+		
+		void *temp = (void *)interface_pointer;
+		temp += sizeof(node_interface);
+		interface_pointer = (node_interface *)temp;
+	}
+	
+	ip_packet *ipPacket = construct_RIP_packet_intf(num_entries, entries, 2, id, ipAddrSource, ipAddrSHRP, INFINITY); 
+	return ipPacket;
+}
 
-	//send ipPacket here
+int send_RIP_response(char *ipAddrDest) {
+	//send a SHRP RIP packet to whoever sent you the request
+	node_interface *pointer = (node_interface *)interfaces;
+	while (strcmp(pointer->ipAddr, ipAddrDest) != 0) {
+		void *temp = (void *)pointer;
+		temp += sizeof(node_interface);
+		pointer = (node_interface *)temp;
+	}
+	ip_packet *ipPacket = construct_SHRP_packet(pointer->id, ipAddrThis, ipAddrDest); 
 
-	free(ent);
+	//send packets here here
+
 	return 0;
 }
 
-int send_RIP_response(int id, char *ipAddrSource, char *ipAddrDest) {
-	entry *entries = (entry *)malloc(sizeof(entry));
-	int num_entries = 0;
+int send_RIP_request(int id, char *ipAddrSrc, char *ipAddrDst) {
+	entry *ent = (entry *)malloc(sizeof(ent));
+	memset(ent, 0, sizeof(ent));
+	int num_entries = 0; 
+	ip_packet *ipPacket = construct_RIP_packet_intf(num_entries, ent, 1, id, ipAddrSrc, ipAddrDst, INFINITY); 
 	
-	entry *entry_pointer = entries;
-	node_interface *interface_pointer = interfaces;
-	fwd_entry *fwd_pointer;
-	while(interface_pointer->ipAddr != '\0') {
-		fwd_pointer = fwd_table;
-		while (strcmp(fwd_pointer->destVIPAddr, interface_pointer->vipRemote) != 0) {
-			void *pointer;
-			pointer += sizeof(fwd_entry);
-			fwd_pointer = (fwd_entry *)pointer;
-		}
-		if (fwd_pointer->destVIPAddr <= 0) {
-			printf("Error with finding correct destination IP address in send_RIP_response\n");
-			return 1;
-		}
-		entry_pointer->cost = (uint32_t) fwd_pointer->cost;
-		entry_pointer->address = (uint32_t) inet_addr(fwd_pointer->destVIPAddr);
-		void *epointer;
-		epointer += sizeof(entry);
-		entry_pointer = (entry *) epointer;
-		num_entries++;
+	//send ipPacket here 
 
-		void *ipointer;
-		ipointer += sizeof(node_interface);
-		interface_pointer = (node_interface *)ipointer;
-	}
-	
-	ip_packet *ipPacket = construct_RIP_packet_intf(num_entries, entries, 2, id, ipAddrSource, ipAddrDest, INFINITY); 
-
-	//send ipPacket here
-
-	free(entries);
 	return 0;
 }
 
@@ -240,22 +289,44 @@ int routes() {
 	return 0;
 }
 
-int send_message(char *vipRemote, char *message) {
-	//find appropriate next hop (consult table) and send
-	//must check to see whether next hop is up or down...
-	//also change to down
-	printf("%s: %s\n", vipRemote, message);
-	int i = 0;
-	for (i = 0; i < count - 1; i++) {
-		if (strcmp(interfaces[i].vipRemote, vipRemote) == 0) {
-//			printf("found vipRemote %s\n", interfaces[i].vipRemote);
-			ip_packet *ipPacket = construct_nonRIP_packet_intf(message, interfaces[i].id, ipAddrThis, interfaces[i].ipAddr, INFINITY); 
-		}
+int send_updates() {
+	node_interface *pointer = (node_interface *)interfaces;
+	while (strlen(pointer->ipAddr) != 0) {
+		int port = pointer->port;
+		ip_packet *ipPacket = construct_SHRP_packet(pointer->id, ipAddrThis, pointer->ipAddr); 
+
+		//send packet here using port variable (maybe?)
+
+		void *temp = (void *)pointer;
+		temp += sizeof(node_interface);
+		pointer = (node_interface *)temp;
 	}
 	return 0;
 }
 
-int test_send(){
+int send_message(char *vipRemote, char *message) {
+	//find appropriate next hop (consult table) and send
+	//must check to see whether next hop is up or down...
+	node_interface *pointer = (node_interface *)interfaces;
+	while (strlen(pointer->ipAddr) != 0) {
+		if ((strcmp(pointer->vipRemote, vipRemote) == 0) && (strcmp(pointer->status, "up") == 0)) {
+			int port = pointer->port;
+			ip_packet *ipPacket = construct_nonRIP_packet_intf(message, pointer->id, ipAddrThis, pointer->ipAddr, INFINITY);
+
+			//send ipPacket here using port variable (maybe?)
+			changeUpDown ("down", pointer->id);
+			return 0;
+			
+		}
+		void *temp = (void *)pointer;
+		temp += sizeof(node_interface);
+		pointer = (node_interface *)temp;
+	}
+	printf("# Error: specified remote VIP not found or is down\n");
+	return 0;
+}
+
+int test_send() {
 	int i = 0;
 	while(i != 10){
 		char packet[512] = "hello world";
@@ -281,6 +352,7 @@ int main(int argc, char* argv[]) {
 		update_fwd_table(interfaces[i].vipRemote, interfaces[i].id, INFINITY);
 		send_RIP_request(interfaces[i].id, ipAddrThis, interfaces[i].ipAddr);
 	}
+	
 /*	printf("\n**testing ifconfig command:\n");
 	ifconfig();
 
@@ -294,6 +366,9 @@ int main(int argc, char* argv[]) {
 	printf("\n**testing routes command:\n");
 	routes();
 */	
+
+	//create thread that checks repeatedly for outdated entries
+	sleep(1);
 	while (1) {
 		printf("\n# Enter a command: ");
 		char *input = (char *)malloc(sizeof(char) * (1400 - sizeof(struct ip)));

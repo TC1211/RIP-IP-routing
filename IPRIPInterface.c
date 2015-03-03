@@ -26,6 +26,10 @@ ip_packet *construct_RIP_packet_intf(int num_entries, entry *entries, int comman
 	return ipPacket;
 }
 
+int is_RIP_packet(struct ip *header) { 
+	return is_RIP(header);
+}
+
 int create_fwd_table() {
 	fwd_table = (fwd_entry *)malloc(MAX_ENTRY * sizeof(fwd_entry));
 	return 0;
