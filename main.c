@@ -250,7 +250,7 @@ char *construct_SHRP_packet(int id, char *ipAddrSource, char *ipAddrSHRP) {
         interface_pointer = (node_interface *)temp; 
     } 
      
-    char *ipPacket = construct_RIP_packet_send(num_entries, entries, 2, id, ipAddrSource, ipAddrSHRP, INFINITY);  
+    char *ipPacket = create_IPpacket_with_RIP(num_entries, entries, 2, id, ipAddrSource, ipAddrSHRP, INFINITY);  
     return ipPacket; 
 } 
  
@@ -273,7 +273,7 @@ int send_RIP_request(int id, char *ipAddrSrc, char *ipAddrDst) {
     entry *ent = (entry *)malloc(sizeof(ent)); 
     memset(ent, 0, sizeof(ent)); 
     int num_entries = 0;  
-    char *packet = construct_RIP_packet_send(num_entries, ent, 1, id, ipAddrSrc, ipAddrDst, INFINITY);  
+    char *packet = create_IPpacket_with_RIP(num_entries, ent, 1, id, ipAddrSrc, ipAddrDst, INFINITY);  
      
     //send ipPacket here  
  
@@ -355,6 +355,33 @@ int test_send() {
     rip_packet *packet = deserialize_RIP(buf); 
     return 0; 
 } 
+
+int initial_flood(){
+	entry flood_info[count-1];
+	entry * copyE = flood_info;
+	node_interface *entry_pointer = interfaces;
+
+	int k;
+	for(k = 0; k < count-1; k++){
+		struct in_addr tempIP;
+		inet_aton(entry_pointer->ipAddr, &tempIP);
+		create_entry(copyE, 1, tempIP.s_addr);
+		copyE++;
+	}
+
+	node_interface *copy = interfaces;
+	char *UDPmsg = (char *)malloc(sizeof(char)*1400);
+
+	int i;
+
+	for (i = 0; i < count-1; i++){
+		ip_packet *packet_to_send = create_IPpacket_with_RIP(count, flood_info, 2, 0, ipAddrThis, copy->ipAddr , 16);
+		IPtoUDP(packet_to_send, UDPmsg);
+		send_in_order(sock, copy->ipAddr, copy->port, UDPmsg);
+		copy++;
+	}
+	return 0;
+}
  
 int receive_RIP_packet(rip_packet *packet) { 
     printf("received info: %d\t%d\n", packet->command, packet->num_entries); 
@@ -377,9 +404,9 @@ int main(int argc, char* argv[]) {
     } 
     parse_file(argv[1]); 
     create_listening_sock(); 
- 
-    printf("**testing test_send:\n"); 
-    test_send(); 
+    initial_flood();
+    //printf("**testing test_send:\n"); 
+    //test_send(); 
     create_fwd_table(); 
     int i = 0; 
     for(i = 0; i < count - 1; i++) { 

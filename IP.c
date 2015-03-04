@@ -2,17 +2,19 @@
 
 //RIP packets
 ip_packet *construct_IP_packet(char *packet, uint16_t id, uint32_t ipAddrSrc, uint32_t ipAddrDest, uint8_t ttl) {
+	
 	ip_packet *ipPacket = (ip_packet *)malloc(sizeof(ip_packet));
 	ip_packet *pointer = ipPacket;
-
 	unsigned long int temp;
+	
 	if(sizeof(packet) >= sizeof(ipPacket->payload)) {
 		temp = sizeof(ipPacket->payload);
 	} else {
 		temp = sizeof(packet);
 	}
-	memcpy(pointer->payload, packet, temp); 
-
+	
+	pointer->payload = packet; 
+	
 	pointer->header.ip_id = id;
 	void *pointer_src = &pointer->header.ip_src;
 	memcpy(pointer_src, &ipAddrSrc, sizeof(pointer->header.ip_src));
@@ -44,7 +46,7 @@ int process_header_for_forwarding(struct ip *header) {
 	u_int8_t ttl_uchar = (u_int8_t) ttl;
 	header->ip_ttl = ttl_uchar;
 
-	//Recompute Checksum
+	//Recompute Checksum //This is wrong! gotta exclude the checksum itself
 	char *header_char = (char *)malloc(sizeof(struct ip));
 	memcpy(header_char, header, sizeof(struct ip));
 	header->ip_sum = ip_sum(header_char, (int) sizeof(struct ip));

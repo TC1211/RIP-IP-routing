@@ -1,18 +1,26 @@
 #include "IPRIPInterface.h"
 
 //for constructing a full RIP packet encapsulated in IP
-char *construct_RIP_packet_send(int num_entries, entry *entries, int command, int id, char *ipAddrSource, char *ipAddrDest, uint8_t ttl) { 
+char *construct_RIP_packet_send(int num_entries, entry *entries, int command) { 
     uint16_t command_in = (uint16_t) command;
     uint16_t num_entries_in = (uint16_t) num_entries;
-/*    uint32_t ipAddrSrc = (uint32_t) inet_addr(ipAddrSource);
-    uint32_t ipAddrDst = (uint32_t) inet_addr(ipAddrDest);
-    uint16_t id_in = (uint16_t) id;
-    uint8_t ttl_in = (uint8_t) ttl;
-*/    
+  
     char *ripBuf = serialize_RIP(command_in, num_entries_in, entries);
     return ripBuf;
 }
 
+ip_packet *create_IPpacket_with_RIP(int num_entries, entry *entries, int command, int id, char *ipAddrSource, char *ipAddrDest, uint8_t ttl){
+	uint32_t ipAddrSrc = (uint32_t) inet_addr(ipAddrSource);
+    	uint32_t ipAddrDst = (uint32_t) inet_addr(ipAddrDest);
+    	uint16_t id_in = (uint16_t) id;
+    	uint8_t ttl_in = (uint8_t) ttl;
+
+	char *RIP_serialized = construct_RIP_packet_send(num_entries, entries, command);	
+
+	ip_packet *IPpacket_with_RIP = construct_IP_packet(RIP_serialized, id_in, ipAddrSrc, ipAddrDst, ttl_in);
+	
+	return IPpacket_with_RIP;
+}
 int create_entry(entry *newEntry, uint32_t cost, uint32_t address){
     newEntry-> cost = cost;
     newEntry->address=address;
