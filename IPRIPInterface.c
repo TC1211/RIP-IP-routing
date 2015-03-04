@@ -22,6 +22,16 @@ ip_packet *create_IPpacket_with_RIP(int num_entries, entry *entries, int command
 	return IPpacket_with_RIP;
 }
 
+int process_rip_command(rip_packet *RIP){
+	int command = RIP->command;
+	if(command == 1){
+		return 1;
+	} else {
+		//check stuff
+	}
+	return 0;
+}
+
 int create_entry(entry *newEntry, uint32_t cost, uint32_t address){
     newEntry-> cost = cost;
     newEntry->address=address;

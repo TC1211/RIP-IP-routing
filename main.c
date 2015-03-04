@@ -193,7 +193,17 @@ void *receive_func(void *arg) {
 	char *remoteVIP = inet_ntoa(remote);
 	if (strcmp(remoteVIP, interfaces->vipThis)){
 		if (is_RIP_packet(&IPpacket->header)) { 
-		printf("Is RIP packet. DEAL WITH IT\n");
+			rip_packet *RIPpack = (RIPpack *)malloc(sizeof(rip_packet));
+			RIPpack = deserialize_RIP(IPpacket->payload);
+			if (process_rip_command(RIPpack)==1){
+				entry *flood_info[count-1];
+				construct_Rip_entries(entry *flood_info);
+				ip_packet *IPpacket = create_IPpacket_with_RIP(count, flood_info, 2, 0, interfaces->vipThis, remoteVIP , 16);	
+				char UDPmsg[1400];
+				node_interface *temp = table_search(remoteVIP);
+				IPtoUDP(IPpacket, UDPmsg);
+				send_in_order(sock, temp->ipAddr, temp->port, UDPmsg);
+			} 
 		} else {
 			printf("%s", IPpacket->payload);
 		}
@@ -217,6 +227,17 @@ void* next_dest(int idLook){
 		}
 	}
 	perror("Next Interface Not Found");
+	return NULL;
+}
+
+node_interface* table_search(char *remoteVIPs){
+	node_interface *head = interfaces;
+	while(head->id != 0){
+		if(strcmp(remoteVIPs,head->vipRemote)){
+			return head;
+		}
+	}
+	perror("Node Not Found");
 	return NULL;
 }
 
@@ -380,8 +401,7 @@ int test_send() {
     return 0; 
 } 
 
-int initial_flood(){
-	entry flood_info[count-1];
+int construct_Rip_entries(entry *flood_info){
 	entry * copyE = flood_info;
 	node_interface *entry_pointer = interfaces;
 
@@ -392,6 +412,12 @@ int initial_flood(){
 		create_entry(copyE, 1, tempIP.s_addr);
 		copyE++;
 	}
+	return 1;
+}
+
+int initial_flood(){
+	entry flood_info[count-1];
+	construct_Rip_entries(flood_info);
 
 	node_interface *copy = interfaces;
 	char *UDPmsg = (char *)malloc(sizeof(char)*1400);
