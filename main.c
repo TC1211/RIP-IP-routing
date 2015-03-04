@@ -177,11 +177,15 @@ int changeUpDown (char *upOrDown, int id) {
 }
 
 /* for now its just printing but eventually all receives must be dealt with here */
-void *receive_func(ip_packet *packet) {
-	struct thread_arg_list *args = (struct thread_arg_list *)packet;
-  	char *rec = set_up_recv_sock(args->sock, args->addr, args->port, args->received_packet);
-	printf("%s\n", rec);
-	int is_RIP = is_RIP_packet(&packet->header);
+void *receive_func(void *arg) {
+	struct thread_arg_list *args = (struct thread_arg_list *)arg;
+
+  	set_up_recv_sock(args->sock,args->addr, args->port, args->received_packet);
+	
+	ip_packet *IPpacket=(ip_packet *)malloc(sizeof(ip_packet));
+	UDPtoIP(args->received_packet, IPpacket);
+	
+	int is_RIP = is_RIP_packet(IPpacket->header);
 	if (is_RIP == 1) {
 		struct ip *header = &packet->header;
 		receive_RIP_packet((rip_packet *)packet->payload);
@@ -329,12 +333,13 @@ int send_message(char *vipRemote, char *message) {
 }
 
 int test_send() {
-	int i = 0;
-	while(i != 10){
-		char packet[512] = "hello world";
-		sock_send(sock, "127.0.0.1", 17001, packet);
-		i++;
-	}
+	ip_packet sendIP;
+	sendIP.header.ip_ttl = 16;
+	sendIP.header.ip_p = 200;
+	sendIP.payload = "moe moe moe";
+	char *UDP = malloc(1400);
+	IPtoUDP(&sendIP, UDP);
+	sock_send(sock, "127.0.0.1", 17001, UDP);
 	return 0;
 }
 
