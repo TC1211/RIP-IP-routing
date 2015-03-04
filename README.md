@@ -33,13 +33,13 @@ The RIP class defines the RIP packet and entry struct used to store information 
 #### IP
 The IP class defines the IP packet, which encapsulates the RIP packet. The IP class provides functionality for constructing an IP packet, for detecting an RIP packet, and for updating the information in the IP header before forwarding (if necessary). The IP class also provides functionality for serializing and de-serializing IP packets to avoid the struct sending problem mentioned above.
 #### UDP Socket
-UDP Socket provides functionality for creating and using UDP sockets. The socket is initialized as UDP with the specification of IP and DGRAM stream. The port number and address is passed into the function argument. The node will only support one connection and the while loop will always keep it open and listening once the connection is established. The send and receive message at the moment needs to be defined with packet size. (NEED UPDATE). There is no way to get out of the while loop at the moment (note: add in the down command).
+UDP Socket provides functionality for creating and using UDP sockets. This class has methods for creating sockets, binding to sockets, sending over a socket, and receiving over a socket. This class is only responsible for setting up and using sockets. 
 #### ipsum
 Code given on the class website.
 #### Interfaces
 ###### RIP IP Interface
 The RIP-IP Interface connects the RIP and IP classes at the convenience of the main class, and provides functionality for constructing RIP packets encapsulated by IP headers for routing. This interface also houses the forwarding table used by nodes to determine which VIPs they should use, as well as to hold information on when the latest updates on neighboring nodes were last received.
 ###### UDP IP Interface
-
+The UDP-IP Interface has functionality for serializing and de-serializing IP packets as well as a method for sending bytes in order.
 ## Sources
 StaaackOverfloooooow
