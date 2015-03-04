@@ -9,7 +9,7 @@
 #include "ipsum.h"
 
 typedef struct ip_packet {
-	struct ip header;
+	struct ip header;  // VIP ADDRESSES ONLY!!!!!!!!!!!!
 	char *payload;
 } ip_packet; 
 

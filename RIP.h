@@ -10,7 +10,7 @@
  
 typedef struct entry { 
     uint32_t cost; //max 16 
-    uint32_t address; 
+    uint32_t address; // VIP ONLY!!!!!!!!!!
 } entry; 
  
 typedef struct rip_packet { 

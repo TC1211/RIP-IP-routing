@@ -36,6 +36,20 @@ int create_fwd_table() {
     return 0;
 }
 
+int Search_forwarding_table(char * dst_addr){
+	fwd_entry * head = fwd_table;
+	int i = 0;
+	while(head->cost != 0 && i < MAX_ENTRY){
+		if(strcmp(head->destVIPAddr,dst_addr)){
+			return head->nextHopInterfaceID;
+		}
+		head++;
+		i++
+	}
+	perror("Entry not found");
+	return -1;
+}
+
 int update_fwd_table(char destVIPAddr[32], int nextHopID, int cost) {
     fwd_entry *pointer = (fwd_entry *)fwd_table;
     while (strlen(pointer->destVIPAddr) != 0) {

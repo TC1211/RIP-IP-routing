@@ -184,18 +184,34 @@ void *receive_func(void *arg) {
      
     ip_packet *IPpacket=(ip_packet *)malloc(sizeof(ip_packet)); 
     UDPtoIP(args->received_packet, IPpacket); 
-     
-    int is_RIP = is_RIP_packet(&IPpacket->header); 
-    if (is_RIP == 1) { 
-//        struct ip *header = &packet->header; 
-//        receive_RIP_packet((rip_packet *)packet->payload); 
+     // CHECK THE HEADER FRIRST
+    if (is_RIP = is_RIP_packet(&IPpacket->header)) { 
+	printf("Is RIP packet. DEAL WITH IT\n");
     } else { 
-         
+	struct in_addr remote = IPpacket->header.ip_dst.s_addr;
+	char *remoteVIP = inet_ntoa(remote);
+	if (strcmp(remote, interfaces->vipThis)){
+		printf("%s", IPpacket->payload);
+	} else {
+		int id = Search_forwarding_table(remoteVIP);
+		char * next_addr = next_dest(id);
+		// Send it
+		
+	}
     } 
       
       pthread_exit(NULL); 
 } 
- 
+
+char * next_dest(int idLook){
+	node_interface *head = interfaces;
+	while(head->id != 0){
+		if(head->id == idLook){
+			return head-> vipRemote;
+		}
+	}
+	perror("Next Hop Not Found");
+}
 char *construct_SHRP_packet(int id, char *ipAddrSource, char *ipAddrSHRP) { 
     //for each interface, if nexthop in fwd_table is ipAddrSHRP, use cost = INFINITY 
     entry *entries = (entry *)malloc(MAX_ENTRY * sizeof(entry)); //RIP entries 
