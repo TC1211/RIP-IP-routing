@@ -26,6 +26,12 @@ ip_packet *construct_RIP_packet_intf(int num_entries, entry *entries, int comman
 	return ipPacket;
 }
 
+int create_entry(entry *newEntry, uint32_t cost, uint32_t address){
+	newEntry-> cost = cost;
+	newEntry->address=address;
+	return 0;
+}
+
 int is_RIP_packet(struct ip *header) { 
 	return is_RIP(header);
 }
