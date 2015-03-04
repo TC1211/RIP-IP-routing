@@ -21,6 +21,7 @@ ip_packet *create_IPpacket_with_RIP(int num_entries, entry *entries, int command
 	
 	return IPpacket_with_RIP;
 }
+
 int create_entry(entry *newEntry, uint32_t cost, uint32_t address){
     newEntry-> cost = cost;
     newEntry->address=address;
@@ -44,7 +45,7 @@ int Search_forwarding_table(char * dst_addr){
 			return head->nextHopInterfaceID;
 		}
 		head++;
-		i++
+		i++;
 	}
 	perror("Entry not found");
 	return -1;

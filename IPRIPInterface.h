@@ -27,6 +27,7 @@ fwd_entry *fwd_table;
 
 int create_fwd_table();
 int create_entry(entry *newEntry, uint32_t cost, uint32_t address);
+int Search_forwarding_table(char * dst_addr);
 char *construct_RIP_packet_send(int num_entries, entry *entries, int command);
 ip_packet *create_IPpacket_with_RIP(int num_entries, entry *entries, int command, int id, char *ipAddrSource, char *ipAddrDest, uint8_t ttl);
 int is_RIP_packet(struct ip *header);

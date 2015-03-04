@@ -25,6 +25,7 @@ int send_updates(); //to be called for sending either triggered updates or perio
 int send_message(char *vipRemote, char *message); //create and send message (non-RIP) 
 int test_send(); 
 int receive_RIP_packet(rip_packet *packet); 
+void* next_dest(int);
  
  
 extern int create_socket(int *sock); 
@@ -185,17 +186,19 @@ void *receive_func(void *arg) {
     ip_packet *IPpacket=(ip_packet *)malloc(sizeof(ip_packet)); 
     UDPtoIP(args->received_packet, IPpacket); 
      // CHECK THE HEADER FRIRST
-    if (is_RIP = is_RIP_packet(&IPpacket->header)) { 
+    if (is_RIP_packet(&IPpacket->header)) { 
 	printf("Is RIP packet. DEAL WITH IT\n");
     } else { 
-	struct in_addr remote = IPpacket->header.ip_dst.s_addr;
+	struct in_addr remote = IPpacket->header.ip_dst;
 	char *remoteVIP = inet_ntoa(remote);
-	if (strcmp(remote, interfaces->vipThis)){
+	if (strcmp(remoteVIP, interfaces->vipThis)){
 		printf("%s", IPpacket->payload);
 	} else {
 		int id = Search_forwarding_table(remoteVIP);
-		char * next_addr = next_dest(id);
-		// Send it
+		struct node_interface *node = next_dest(id);
+		char UDPmsg[1400];
+		IPtoUDP(IPpacket, UDPmsg);
+		send_in_order(sock, node->ipAddr, node->port, UDPmsg);
 		
 	}
     } 
@@ -203,15 +206,17 @@ void *receive_func(void *arg) {
       pthread_exit(NULL); 
 } 
 
-char * next_dest(int idLook){
+void* next_dest(int idLook){
 	node_interface *head = interfaces;
 	while(head->id != 0){
 		if(head->id == idLook){
-			return head-> vipRemote;
+			return head;
 		}
 	}
-	perror("Next Hop Not Found");
+	perror("Next Interface Not Found");
+	return NULL;
 }
+
 char *construct_SHRP_packet(int id, char *ipAddrSource, char *ipAddrSHRP) { 
     //for each interface, if nexthop in fwd_table is ipAddrSHRP, use cost = INFINITY 
     entry *entries = (entry *)malloc(MAX_ENTRY * sizeof(entry)); //RIP entries 
