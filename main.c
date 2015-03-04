@@ -185,23 +185,22 @@ void *receive_func(void *arg) {
      
     ip_packet *IPpacket=(ip_packet *)malloc(sizeof(ip_packet)); 
     UDPtoIP(args->received_packet, IPpacket); 
-     // CHECK THE HEADER FRIRST
-    if (is_RIP_packet(&IPpacket->header)) { 
-	printf("Is RIP packet. DEAL WITH IT\n");
-    } else { 
+     // CHECK THE HEADER FIRST
 	struct in_addr remote = IPpacket->header.ip_dst;
 	char *remoteVIP = inet_ntoa(remote);
 	if (strcmp(remoteVIP, interfaces->vipThis)){
-		printf("%s", IPpacket->payload);
+		if (is_RIP_packet(&IPpacket->header)) { 
+		printf("Is RIP packet. DEAL WITH IT\n");
+		} else {
+			printf("%s", IPpacket->payload);
+		}
 	} else {
 		int id = Search_forwarding_table(remoteVIP);
 		struct node_interface *node = next_dest(id);
 		char UDPmsg[1400];
 		IPtoUDP(IPpacket, UDPmsg);
 		send_in_order(sock, node->ipAddr, node->port, UDPmsg);
-		
-	}
-    } 
+    	} 
       
       pthread_exit(NULL); 
 } 
