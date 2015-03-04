@@ -10,6 +10,26 @@
 #include "UDPSocket.h" 
 #include "IPRIPInterface.h" 
  
+#define MAX_LINE 256 
+#define MAX_CHAR 32 
+
+typedef struct node_interface { 
+    int id; 
+    int port; 
+    char ipAddr[MAX_CHAR]; 
+    char vipThis[MAX_CHAR]; 
+    char vipRemote[MAX_CHAR]; 
+    char status[MAX_CHAR]; //up by default 
+} node_interface; 
+ 
+struct thread_arg_list{ 
+    int *sock; 
+    char *addr; 
+    uint16_t port; 
+    char *received_packet; 
+}; 
+
+
 int parse_file(char *); 
 int create_listening_sock(); 
 int ifconfig(); //ifconfig command 
@@ -26,31 +46,17 @@ int send_message(char *vipRemote, char *message); //create and send message (non
 int test_send(); 
 int receive_RIP_packet(rip_packet *packet); 
 void* next_dest(int);
+int construct_Rip_entries(entry *);
+node_interface* table_search(char *);
+int construct_and_send_IP(entry *, char *);
  
- 
+ /*
 extern int create_socket(int *sock); 
 extern int bind_node_addr(int *sock, const char *addr, uint16_t port); 
 extern int sock_send(int *sock, char *addr, uint16_t port, char* packet); 
 extern int create_fwd_table(); 
+ */
  
-#define MAX_LINE 256 
-#define MAX_CHAR 32 
- 
-typedef struct node_interface { 
-    int id; 
-    int port; 
-    char ipAddr[MAX_CHAR]; 
-    char vipThis[MAX_CHAR]; 
-    char vipRemote[MAX_CHAR]; 
-    char status[MAX_CHAR]; //up by default 
-} node_interface; 
- 
-struct thread_arg_list{ 
-    int *sock; 
-    char *addr; 
-    uint16_t port; 
-    char *received_packet; 
-}; 
  
 node_interface *interfaces; 
 pthread_t children_tid[MAX_ENTRY]; 
@@ -193,16 +199,12 @@ void *receive_func(void *arg) {
 	char *remoteVIP = inet_ntoa(remote);
 	if (strcmp(remoteVIP, interfaces->vipThis)){
 		if (is_RIP_packet(&IPpacket->header)) { 
-			rip_packet *RIPpack = (RIPpack *)malloc(sizeof(rip_packet));
+			rip_packet *RIPpack = (rip_packet *)malloc(sizeof(rip_packet));
 			RIPpack = deserialize_RIP(IPpacket->payload);
 			if (process_rip_command(RIPpack)==1){
-				entry *flood_info[count-1];
-				construct_Rip_entries(entry *flood_info);
-				ip_packet *IPpacket = create_IPpacket_with_RIP(count, flood_info, 2, 0, interfaces->vipThis, remoteVIP , 16);	
-				char UDPmsg[1400];
-				node_interface *temp = table_search(remoteVIP);
-				IPtoUDP(IPpacket, UDPmsg);
-				send_in_order(sock, temp->ipAddr, temp->port, UDPmsg);
+				entry flood_info[count-1];
+				construct_Rip_entries(flood_info);
+				construct_and_send_IP(flood_info, remoteVIP);
 			} 
 		} else {
 			printf("%s", IPpacket->payload);
@@ -218,6 +220,14 @@ void *receive_func(void *arg) {
       
       pthread_exit(NULL); 
 } 
+
+int construct_and_send_IP(entry *flood_info, char *remoteVIP){
+	ip_packet *IPpacket = create_IPpacket_with_RIP(count, flood_info, 2, 0, interfaces->vipThis, remoteVIP , 16);	
+	char UDPmsg[1400];
+	node_interface *temp = table_search(remoteVIP);
+	IPtoUDP(IPpacket, UDPmsg);
+	send_in_order(sock, temp->ipAddr, temp->port, UDPmsg);
+}
 
 void* next_dest(int idLook){
 	node_interface *head = interfaces;
