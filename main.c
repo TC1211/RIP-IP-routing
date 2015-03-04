@@ -179,13 +179,16 @@ int changeUpDown (char *upOrDown, int id) {
  
 /* for now its just printing but eventually all receives must be dealt with here */ 
 void *receive_func(void *arg) { 
-    struct thread_arg_list *args = (struct thread_arg_list *)arg; 
+    	struct thread_arg_list *args = (struct thread_arg_list *)arg; 
  
-      set_up_recv_sock(args->sock,args->addr, args->port, args->received_packet); 
+      	set_up_recv_sock(args->sock,args->addr, args->port, args->received_packet); 
      
-    ip_packet *IPpacket=(ip_packet *)malloc(sizeof(ip_packet)); 
-    UDPtoIP(args->received_packet, IPpacket); 
-     // CHECK THE HEADER FIRST
+    	ip_packet *IPpacket=(ip_packet *)malloc(sizeof(ip_packet)); 
+    	UDPtoIP(args->received_packet, IPpacket); 
+     	if(!checksum_compute(IPpacket)){
+		return NULL; // drop packet
+	}
+
 	struct in_addr remote = IPpacket->header.ip_dst;
 	char *remoteVIP = inet_ntoa(remote);
 	if (strcmp(remoteVIP, interfaces->vipThis)){
@@ -197,6 +200,7 @@ void *receive_func(void *arg) {
 	} else {
 		int id = Search_forwarding_table(remoteVIP);
 		struct node_interface *node = next_dest(id);
+		process_header_for_forwarding(&(IPpacket->header));
 		char UDPmsg[1400];
 		IPtoUDP(IPpacket, UDPmsg);
 		send_in_order(sock, node->ipAddr, node->port, UDPmsg);

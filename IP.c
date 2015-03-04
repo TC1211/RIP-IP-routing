@@ -39,6 +39,20 @@ int is_RIP(struct ip *header) {
 	}
 }
 
+int checksum_compute(ip_packet *IP){
+	u_short tempChecksum = IP->header.ip_sum;
+	char * header_char = (char *)malloc(sizeof(struct ip));
+	IP->header.ip_sum = 0;
+	memcpy(header_char, IP, sizeof(struct ip));
+	if(tempChecksum == ip_sum(header_char, (int) sizeof(struct ip))){
+		IP->header.ip_sum = tempChecksum;
+		free(header_char);
+		return 1;
+	}
+	free(header_char);
+	return 0;
+}
+
 int process_header_for_forwarding(struct ip *header) {
 	//Decrement TTL
 	u_int8_t ttl = header->ip_ttl;
@@ -47,6 +61,8 @@ int process_header_for_forwarding(struct ip *header) {
 	header->ip_ttl = ttl_uchar;
 
 	//Recompute Checksum //This is wrong! gotta exclude the checksum itself
+	u_short tempChecksum = header->ip_sum;
+	header->ip_sum = 0;
 	char *header_char = (char *)malloc(sizeof(struct ip));
 	memcpy(header_char, header, sizeof(struct ip));
 	header->ip_sum = ip_sum(header_char, (int) sizeof(struct ip));
