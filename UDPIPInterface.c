@@ -1,6 +1,6 @@
 #include "UDPIPInterface.h"
 
-int set_up_recv_sock(int *sock,char *addr, uint16_t port, char *received_packet){
+int set_up_recv_sock(int *sock, char *addr, uint16_t port, char *received_packet) {
 	struct sockaddr_in receivedfrom_addr;
 	recv_sockaddr(sock,addr, port, &receivedfrom_addr);
 	sock_recv(sock, &receivedfrom_addr, received_packet);
@@ -15,20 +15,24 @@ int UDPtoIP(char *packet, ip_packet *IPpack) {
 	ttl = strtok(packet ,&token);
 	IPpack->header.ip_ttl = ntohs(atoi(ttl));
 
-	printf("%d \n", (int)IPpack->header.ip_ttl);
+	printf("ttl: %d \n", (int)IPpack->header.ip_ttl);
 
+	ttl = strtok(NULL ,&token);
 	ttl = strtok(NULL ,&token);
 	IPpack->header.ip_p = ntohs(atoi(ttl));
 	printf("%d \n", IPpack->header.ip_p);
 
 	ttl = strtok(NULL ,&token);
+	ttl = strtok(NULL ,&token);
 	IPpack->header.ip_sum = ntohs(atoi(ttl));
 	printf("%d \n", IPpack->header.ip_sum);
 
 	ttl = strtok(NULL ,&token);
+	ttl = strtok(NULL ,&token);
 	IPpack->header.ip_id = ntohs(atoi(ttl));
 	printf("%d \n", IPpack->header.ip_id);
 
+	ttl = strtok(NULL ,&token);
 	ttl = strtok(NULL, &token);
 	char *tempMsg = malloc(sizeof(ttl));
 	strcpy(tempMsg, ttl);
@@ -46,7 +50,7 @@ int UDPtoIP(char *packet, ip_packet *IPpack) {
 }
 
 //Enforce Network Byte Order
-int IPtoUDP(ip_packet *IPpack, char *UDPmsg){
+int IPtoUDP(ip_packet *IPpack, char *UDPmsg) {
 	char pad = '\n';
 	char *buf = UDPmsg;
 	char *ttl = malloc(8);

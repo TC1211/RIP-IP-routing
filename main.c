@@ -14,7 +14,7 @@ int parse_file(char *);
 int create_listening_sock();
 int ifconfig(); //ifconfig command
 int changeUpDown(); //changeUpDown command
-void *receive_func(ip_packet *);
+void *receive_func(void *arg);
 ip_packet *construct_SHRP_packet(int id, char *ipAddrSource, char *ipAddrSHRP); //creates 
 	//RIP packet with poison reverse; must be called for each interface that is up
 int send_RIP_response(char *ipAddrDest); //send RIP response packet to whoever send you a 
@@ -185,10 +185,10 @@ void *receive_func(void *arg) {
 	ip_packet *IPpacket=(ip_packet *)malloc(sizeof(ip_packet));
 	UDPtoIP(args->received_packet, IPpacket);
 	
-	int is_RIP = is_RIP_packet(IPpacket->header);
+	int is_RIP = is_RIP_packet(&IPpacket->header);
 	if (is_RIP == 1) {
-		struct ip *header = &packet->header;
-		receive_RIP_packet((rip_packet *)packet->payload);
+//		struct ip *header = &packet->header;
+//		receive_RIP_packet((rip_packet *)packet->payload);
 	} else {
 		
 	}
@@ -371,7 +371,7 @@ int main(int argc, char* argv[]) {
 	int i = 0;
 	for(i = 0; i < count - 1; i++) {
 		update_fwd_table(interfaces[i].vipRemote, interfaces[i].id, INFINITY);
-		send_RIP_request(interfaces[i].id, ipAddrThis, interfaces[i].ipAddr);
+//		send_RIP_request(interfaces[i].id, ipAddrThis, interfaces[i].ipAddr);
 	}
 	
 /*	printf("\n**testing ifconfig command:\n");
