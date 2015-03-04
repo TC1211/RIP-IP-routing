@@ -364,7 +364,7 @@ int initial_flood(){
 	int k;
 	for(k = 0; k < count-1; k++){
 		struct in_addr tempIP;
-		inet_aton(entry_pointer->ipAddr, &tempIP);
+		inet_aton(entry_pointer->vipRemote, &tempIP);
 		create_entry(copyE, 1, tempIP.s_addr);
 		copyE++;
 	}
@@ -375,7 +375,7 @@ int initial_flood(){
 	int i;
 
 	for (i = 0; i < count-1; i++){
-		ip_packet *packet_to_send = create_IPpacket_with_RIP(count, flood_info, 2, 0, ipAddrThis, copy->ipAddr , 16);
+		ip_packet *packet_to_send = create_IPpacket_with_RIP(count, flood_info, 2, 0, copy->vipThis, copy->vipRemote , 16);
 		IPtoUDP(packet_to_send, UDPmsg);
 		send_in_order(sock, copy->ipAddr, copy->port, UDPmsg);
 		copy++;
