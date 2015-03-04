@@ -32,20 +32,25 @@ int UDPtoIP(char *packet, ip_packet *IPpack) {
 	IPpack->header.ip_id = ntohs(atoi(ttl));
 	printf("%d \n", IPpack->header.ip_id);
 
+
+	ttl = strtok(NULL ,&token);
+	ttl = strtok(NULL ,&token);
+	printf("%s \n", ttl);
+	inet_aton(ttl, &(IPpack->header.ip_src));
+
+	ttl = strtok(NULL ,&token);
+	ttl = strtok(NULL ,&token);
+	printf("%s \n", ttl);
+	inet_aton(ttl, &(IPpack->header.ip_dst));
+	
+	ttl = "";
 	ttl = strtok(NULL ,&token);
 	ttl = strtok(NULL, &token);
 	char *tempMsg = malloc(sizeof(ttl));
 	strcpy(tempMsg, ttl);
 	IPpack->payload = tempMsg;
 	printf("%s \n", IPpack->payload);
-	/*
-	IPpack->header.ip_src = tempIP->header.ip_src;
-	IPpack->header.ip_dst = tempIP->header.ip_dst;
-	IPpack->payload = tempIP->payload;
 
-	memcpy(IPpack, tempIP, (int) sizeof(ip_packet));
-	free(tempIP);
-*/
 	return 0;
 }
 
@@ -68,10 +73,19 @@ int IPtoUDP(ip_packet *IPpack, char *UDPmsg) {
 	strcat(sum,&pad);
 	strcat(buf,sum);
 
+
 	char *id = malloc(8);
 	sprintf(id, "%i", htons(IPpack->header.ip_id));
 	strcat(id,&pad);
 	strcat(buf,id);
+
+	char * src_addr = inet_ntoa(IPpack->header.ip_src);
+	strcat(src_addr,&pad);
+	strcat(buf,src_addr);
+
+	char * dst_addr = inet_ntoa(IPpack->header.ip_dst);
+	strcat(dst_addr,&pad);
+	strcat(buf,dst_addr);
 	
 	strcat(buf, IPpack->payload);
 	printf("%s\n\n", buf);
