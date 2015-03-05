@@ -1,7 +1,7 @@
 #include "IP.h"
 
 //RIP packets
-ip_packet *construct_IP_packet(char *packet, uint16_t id, uint32_t ipAddrSrc, uint32_t ipAddrDest, uint8_t ttl) {
+ip_packet *construct_IP_packet(char *packet, uint16_t id, uint32_t ipAddrSrc, uint32_t ipAddrDest, uint8_t ttl, uint8_t ip_p) {
   ip_packet ipPacket[sizeof(ip_packet)];
   //	ip_packet *ipPacket = (ip_packet *)malloc(sizeof(ip_packet));
 	ip_packet *pointer = ipPacket;
@@ -14,7 +14,7 @@ ip_packet *construct_IP_packet(char *packet, uint16_t id, uint32_t ipAddrSrc, ui
 	}
 	
 	pointer->payload = packet; 
-	
+	pointer->header.ip_p = ip_p;
 	pointer->header.ip_id = id;
 	void *pointer_src = &pointer->header.ip_src;
 	memcpy(pointer_src, &ipAddrSrc, sizeof(pointer->header.ip_src));

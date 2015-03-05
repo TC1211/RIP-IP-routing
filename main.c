@@ -15,19 +15,19 @@
 #define MAX_CHAR 32
 
 typedef struct node_interface {
-    int id;
-    int port;
-    char ipAddr[MAX_CHAR];
-    char vipThis[MAX_CHAR];
-    char vipRemote[MAX_CHAR];
-    char status[MAX_CHAR]; //up by default
+	int id;
+    	int port;
+    	char ipAddr[MAX_CHAR];
+    	char vipThis[MAX_CHAR];
+    	char vipRemote[MAX_CHAR];
+    	char status[MAX_CHAR]; //up by default
 } node_interface;
  
 struct thread_arg_list{
-    int *sock;
-    char *addr;
-    uint16_t port;
-    char *received_packet;
+    	int *sock;
+    	char *addr;
+    	uint16_t port;
+    	char *received_packet;
 };
 
 
@@ -56,62 +56,75 @@ char ipAddrThis[MAX_CHAR];
 
 
 int main(int argc, char* argv[]) {
-    if (argc > 2) {
-        printf("Incorrect input\n");
-        return 1;
-    }
-    int i = parse_file(argv[1]);
-    int j = create_fwd_table();
-    int k = populate_fwd_table();
-    create_listening_sock();
+    	if (argc > 2) {
+        	printf("Incorrect input\n");
+        	return 1;
+    	}
+    	parse_file(argv[1]);
+    	create_fwd_table();
+    	populate_fwd_table();
+    	create_listening_sock();
  
-    int result;
-    struct thread_arg_list *arg_list;
-    pthread_t pid;
-    if((result = pthread_create(&pid, NULL, (void *)periodic_updates,arg_list))){
-        perror("Create thread Failed");
-        return 1;
-    }   
-    sleep(1);
-    initial_flood();  
-    // This GUI command input can be also in its own thread
-    while (1) {
-        printf("\n# Enter a command: ");
-        char *input = (char *)malloc(sizeof(char) * (1400 - sizeof(struct ip)));
-        char *input_orig = (char *)malloc(sizeof(char) * (1400 - sizeof(struct ip)));
-        fgets(input, 1400 - sizeof(struct ip), stdin);
-        memcpy(input_orig, input, 1400 - sizeof(struct ip));
+    	int result;
+    	struct thread_arg_list *arg_list;
+    	pthread_t pid;
+    	if((result = pthread_create(&pid, NULL, (void *)periodic_updates,arg_list))){
+        	perror("Create thread Failed");
+        	return 1;
+    	}   
+    	sleep(1);
+    	initial_flood();  
+    	// This GUI command input can be also in its own thread
+    	while (1) {
+        	printf("\n# Enter a command: ");
+        	char *input = (char *)malloc(sizeof(char) * (1400 - sizeof(struct ip)));
+        	char *input_orig = (char *)malloc(sizeof(char) * (1400 - sizeof(struct ip)));
+        	fgets(input, 1400 - sizeof(struct ip), stdin);
+        	memcpy(input_orig, input, 1400 - sizeof(struct ip));
          
-        char *newline = strchr(input, '\n');
-        if (newline) {
-            *newline = 0;
-        }
-        char *token = strtok(input, " ");
-        if (token == NULL) {
-            printf("Error in input format\n");
-            break;
-        }
-        if (strcmp(token, "ifconfig") == 0) {
-            ifconfig();
-        } else if (strcmp(token, "routes") == 0) {
-            routes();
-        } else if (strcmp(token, "up") == 0 || strcmp(token, "down") == 0) {
-            char *upOrDown = token;
-            char *temp = strtok(NULL, " ");
-            int interface = atoi(temp);
-            changeUpDown(upOrDown, interface);
-        } else if (strcmp(token, "send") == 0) {
-            char *vipRemote = strtok(NULL, " ");
-            char *message = (char *)malloc(1400 - sizeof(struct ip));
-            strncpy(message, (void *)input_orig + 6 + strlen(vipRemote), 1400 - sizeof(struct ip));
-            send_message(vipRemote, message);
-        }  
-         
-    }
- 
-    close(*sock);
- 
-    return 0;
+        	char *newline = strchr(input, '\n');
+        	if (newline) {
+        		*newline = 0;
+        	}
+        	char *token = strtok(input, " ");
+        	if (token == NULL) {
+            		printf("Error in input format\n");
+            		break;
+        	}
+        	if (strcmp(token, "ifconfig") == 0) {
+            		ifconfig();
+        	} else if (strcmp(token, "routes") == 0) {
+            		routes();
+        	} else if (strcmp(token, "up") == 0 || strcmp(token, "down") == 0) {
+            		char *upOrDown = token;
+            		char *temp = strtok(NULL, " ");
+            		int interface = atoi(temp);
+            		changeUpDown(upOrDown, interface);
+        	} else if (strcmp(token, "send") == 0) {
+            		char *vipRemote = strtok(NULL, " ");
+            		char *message = (char *)malloc(1400 - sizeof(struct ip));
+            		strncpy(message, (void *)input_orig + 6 + strlen(vipRemote), 1400 - sizeof(struct ip));
+			char *msg = strtok(message, "\n");
+			
+			ip_packet ip[sizeof(ip_packet)];
+			ip_packet *packet = ip;
+			char b[sizeof(ip_packet)];
+			char *buf = b;
+			
+			node_interface *current = (node_interface *)interfaces;
+			while (strlen(current->ipAddr) != 0 && strcmp(current->vipRemote, vipRemote) != 0) {
+				current++;
+			}
+			char *ipAddrDest = current->ipAddr;
+			packet = create_IPpacket_without_RIP(msg, ipAddrThis, ipAddrDest, (uint8_t) INFINITY);
+		
+			IPtoUDP(packet, buf);
+			printf("buf: %s\n", buf);
+			send_in_order(sock, ipAddrDest, current->port, buf);
+        	}  
+    	}
+    	close(*sock);
+ 	return 0;
 }
 
 int parse_file(char *path){
@@ -228,69 +241,70 @@ int create_listening_sock(){
  
 /* for now its just printing but eventually all receives must be dealt with here */
 void *receive_func(void *arg) {
-        struct thread_arg_list *args = (struct thread_arg_list *)arg;
-	//    while(1){
-      set_up_recv_sock(args->sock,args->addr, args->port, args->received_packet);
-      
-      ip_packet IPpacket[1];
-      UDPtoIP(args->received_packet, IPpacket);
-      if(!checksum_compute(IPpacket)){
-      return NULL; // drop packet
-      }
-      
-      struct in_addr dest_addr = IPpacket->header.ip_dst;
-      char *remoteVIP = inet_ntoa(dest_addr);
-      struct in_addr src_addr = IPpacket->header.ip_src;
-      char *srcVIP = inet_ntoa(src_addr);
+	struct thread_arg_list *args = (struct thread_arg_list *)arg;
+	while(1){
+	set_up_recv_sock(args->sock,args->addr, args->port, args->received_packet);
+	ip_packet ip[sizeof(ip_packet)];
+	ip_packet *IPpacket = ip;
+	UDPtoIP(args->received_packet, IPpacket);
+	if(!checksum_compute(IPpacket)) {
+		return NULL; // drop packet
+	}
+      	struct in_addr dest_addr = IPpacket->header.ip_dst;
+      	char *remoteVIP = inet_ntoa(dest_addr);
+      	struct in_addr src_addr = IPpacket->header.ip_src;
+      	char *srcVIP = inet_ntoa(src_addr);
 
-      if (strcmp(remoteVIP, interfaces->vipThis)){        
-        if (is_RIP_packet(&IPpacket->header)) {
-          rip_packet *RIPpack = (rip_packet *)malloc(sizeof(rip_packet));
-          RIPpack = deserialize_RIP(IPpacket->payload);
-          int src_id  = get_src_interface_id(srcVIP);
-          if (process_rip_command(RIPpack)){//Request
-        fwd_entry *fwd_info = fwd_table;
-        entry *RIP_entries = (entry *)malloc(sizeof(RIP_entries)*64);
-        int numEnt = 0;
-        while(fwd_info->cost !=0){
-          entry tempEntry;
-          struct in_addr dest_addr_entry;
-          inet_aton(fwd_info->destVIPAddr, &dest_addr_entry);
-          if(fwd_info->nextHopInterfaceID == src_id){   //SHRP
-            fwd_info->cost = INFINITY;
-            create_entry(&tempEntry, INFINITY, dest_addr_entry.s_addr);
-          } else {
-            create_entry(&tempEntry, fwd_info->cost, dest_addr_entry.s_addr);
-          }
-          *RIP_entries = tempEntry;
-          fwd_info++;
-           RIP_entries++;
-           numEnt++;
-        }
-        construct_and_send_IP(numEnt, RIP_entries,2, srcVIP);
-          } else { //Response->update table
-        entry *List_of_entries = RIPpack->entries;
-        int e;
-        for (e = 0 ; e < RIPpack->num_entries; e++){
-          struct in_addr tempAddr;
-          tempAddr.s_addr = List_of_entries->address;
-          char * DestAddr = inet_ntoa(tempAddr);
-          update_fwd_table(DestAddr, src_id, List_of_entries->cost+1);
-        }
-          }
-        } else {
-          printf("%s", IPpacket->payload);
-        }
-      } else {
-        int id = Search_forwarding_table(remoteVIP);
-        struct node_interface *node = next_dest(id);
-        process_header_for_forwarding(&(IPpacket->header));
-        char UDPmsg[1400];
-        IPtoUDP(IPpacket, UDPmsg);
-        send_in_order(sock, node->ipAddr, node->port, UDPmsg);
-      }
-      //    }
-      pthread_exit(NULL);
+      	if (strcmp(remoteVIP, interfaces->vipThis) == 0) {    
+//        	if (is_RIP_packet(&IPpacket->header) == 1) {
+		if (IPpacket->header.ip_p == 200) {
+			printf("got an RIP packet\n");
+          		rip_packet *RIPpack = (rip_packet *)malloc(sizeof(rip_packet));
+          		RIPpack = deserialize_RIP(IPpacket->payload);
+          		int src_id  = get_src_interface_id(srcVIP);
+          		if (process_rip_command(RIPpack)){//Request
+        			fwd_entry *fwd_info = fwd_table;
+        			entry *RIP_entries = (entry *)malloc(sizeof(RIP_entries)*64);
+        			int numEnt = 0;
+        			while(fwd_info->cost !=0){
+          				entry tempEntry;
+          				struct in_addr dest_addr_entry;
+          				inet_aton(fwd_info->destVIPAddr, &dest_addr_entry);
+          				if(fwd_info->nextHopInterfaceID == src_id){   //SHRP
+            					fwd_info->cost = INFINITY;
+            					create_entry(&tempEntry, INFINITY, dest_addr_entry.s_addr);
+          				} else {
+            					create_entry(&tempEntry, fwd_info->cost, dest_addr_entry.s_addr);
+          				}
+          				*RIP_entries = tempEntry;
+          				fwd_info++;
+           				RIP_entries++;
+           				numEnt++;
+        			}
+        			construct_and_send_IP(numEnt, RIP_entries,2, srcVIP);
+          			} else { //Response->update table
+        				entry *List_of_entries = RIPpack->entries;
+        				int e;
+        				for (e = 0 ; e < RIPpack->num_entries; e++){
+          					struct in_addr tempAddr;
+          					tempAddr.s_addr = List_of_entries->address;
+          					char * DestAddr = inet_ntoa(tempAddr);
+          					update_fwd_table(DestAddr, src_id, List_of_entries->cost + 1);
+        				}
+          			}
+        		} else {
+          			printf("# Received a message: %s", IPpacket->payload);
+        	}
+      	} else {
+        	int id = Search_forwarding_table(remoteVIP);
+        	struct node_interface *node = next_dest(id);
+        	process_header_for_forwarding(&(IPpacket->header));
+        	char UDPmsg[1400];
+        	IPtoUDP(IPpacket, UDPmsg);
+        	send_in_order(sock, node->ipAddr, node->port, UDPmsg);
+      	}
+}
+      	pthread_exit(NULL);
 }
 
 void *periodic_updates(void *args) {

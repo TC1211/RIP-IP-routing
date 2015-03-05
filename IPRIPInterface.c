@@ -17,7 +17,7 @@ ip_packet *create_IPpacket_with_RIP(int num_entries, entry *entries, int command
 
 	char *RIP_serialized = construct_RIP_packet_send(num_entries, entries, command);	
 
-	ip_packet *IPpacket_with_RIP = construct_IP_packet(RIP_serialized, id_in, ipAddrSrc, ipAddrDst, ttl_in);
+	ip_packet *IPpacket_with_RIP = construct_IP_packet(RIP_serialized, id_in, ipAddrSrc, ipAddrDst, ttl_in, 200);
 	
 	return IPpacket_with_RIP;
 }

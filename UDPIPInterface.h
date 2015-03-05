@@ -12,5 +12,6 @@ int IPtoUDP(ip_packet *IPpack, char *UDPmsg);
 int fragment_large_packets();
 int assemble_broken_fragments();
 int send_in_order(int *sock, char *addr, uint16_t port, char* packet);
+ip_packet *create_IPpacket_without_RIP(char *msg, char *ipAddrSource, char *ipAddrDest, uint8_t ttl);
 
 #endif
