@@ -40,7 +40,6 @@ int sock_send(int *sock, char *addr, uint16_t port, char* packet){
 		perror("sendto failed");
 		return 1;
 	}
-	printf("send succesful:%i bytes sent\n", (int) length);
 	return 0;
 }
 
@@ -61,10 +60,8 @@ char *sock_recv(int *sock,struct sockaddr_in *receivedfrom_addr, char *received_
 	fromlen = sizeof(receivedfrom_addr);
         recvlen = recvfrom(*sock, received_packet, 64000, 0, (struct sockaddr *)&receivedfrom_addr, &fromlen);
 
-        printf("received %d bytes\n", recvlen);
         if (recvlen > 0) {
             	received_packet[recvlen] = 0;
-                printf("received message: \"%s\"\n", received_packet);
         }
 	return received_packet;
 }

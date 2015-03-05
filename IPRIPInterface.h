@@ -23,6 +23,7 @@ typedef struct fwd_entry {
     time_t last_refresh;
 } fwd_entry;
 
+fwd_entry table[MAX_ENTRY * sizeof(entry)];
 fwd_entry *fwd_table; 
 
 int create_fwd_table();

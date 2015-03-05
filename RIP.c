@@ -46,7 +46,6 @@ char *serialize_RIP(uint16_t command, uint16_t num_entries, entry *entries) {
             temp += sizeof(entry); 
             iterator = (entry *)temp; 
         } 
-        printf("buf: %s\n", buf); 
         return buf; 
 } 
  

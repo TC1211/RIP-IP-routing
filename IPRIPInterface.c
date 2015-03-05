@@ -26,8 +26,6 @@ int process_rip_command(rip_packet *RIP){
 	int command = RIP->command;
 	if(command == 1){
 		return 1;
-	} else {
-		//check stuff
 	}
 	return 0;
 }
@@ -43,7 +41,7 @@ int is_RIP_packet(struct ip *header) {
 }
 
 int create_fwd_table() {
-    fwd_table = (fwd_entry *)malloc(MAX_ENTRY * sizeof(fwd_entry));
+  fwd_table = table;
     return 0;
 }
 

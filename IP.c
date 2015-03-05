@@ -2,8 +2,8 @@
 
 //RIP packets
 ip_packet *construct_IP_packet(char *packet, uint16_t id, uint32_t ipAddrSrc, uint32_t ipAddrDest, uint8_t ttl) {
-	
-	ip_packet *ipPacket = (ip_packet *)malloc(sizeof(ip_packet));
+  ip_packet ipPacket[sizeof(ip_packet)];
+  //	ip_packet *ipPacket = (ip_packet *)malloc(sizeof(ip_packet));
 	ip_packet *pointer = ipPacket;
 	unsigned long int temp;
 	
@@ -21,12 +21,13 @@ ip_packet *construct_IP_packet(char *packet, uint16_t id, uint32_t ipAddrSrc, ui
 	void *pointer_dst = &pointer->header.ip_dst;
 	memcpy(pointer_dst, &ipAddrDest, sizeof(pointer->header.ip_dst));
 
-	char *header_char = (char *)malloc(sizeof(struct ip));
+	char header[sizeof(struct ip)];
+        char *header_char = header;
+	//	char *header_char = (char *)malloc(sizeof(struct ip));
 	memcpy(header_char, &pointer->header, sizeof(struct ip));
 	pointer->header.ip_sum = ip_sum(header_char, (int) sizeof(struct ip));
 
-	pointer->header.ip_ttl = ttl; 
-
+	pointer->header.ip_ttl = ttl;
 	return ipPacket;
 }
 
