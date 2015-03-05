@@ -19,8 +19,9 @@ rip_packet *construct_RIP_packet(uint16_t command, uint16_t num_entries, entry *
 }
  
 char *serialize_RIP(uint16_t command, uint16_t num_entries, entry *entries) {
-    char *buf = malloc(2 * (sizeof(entries) + sizeof(num_entries))); 
-    char *delimiter = "^"; 
+	char buf_meh[2 * (sizeof(entries) + sizeof(num_entries))];
+    	char *buf = buf_meh; 
+    	char *delimiter = "^"; 
      
         char command_conv[16]; 
         sprintf(command_conv, "%d", command); 

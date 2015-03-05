@@ -64,7 +64,6 @@ int main(int argc, char* argv[]) {
     int j = create_fwd_table();
     int k = populate_fwd_table();
     create_listening_sock();
-    //    printf("\n***GOT HERE***\n");
  
     int result;
     struct thread_arg_list *arg_list;
@@ -134,14 +133,14 @@ int parse_file(char *path){
         } else {
             ipAddr = split;
         }
-        printf("IPADDR: %s\n", ipAddr);
+//      printf("IPADDR: %s\n", ipAddr);
  
         split = strtok(NULL, ":"); //segment after ":"
          
         if (count == 0) { //first line; "port" is this node's port
             strcpy(ipAddrThis, ipAddr);
             port = (uint16_t) atoi(split);
-            printf("PORT: %d\n", port);
+//	    printf("PORT: %d\n", port);
  
             sock = (int *)malloc(sizeof(int));
             create_socket(sock);         
@@ -151,7 +150,7 @@ int parse_file(char *path){
              //there should be VIPs following
             split = strtok(split, " ");  
             port = atoi(split);
-            printf("PORT: %d\n", port);
+//          printf("PORT: %d\n", port);
             split = strtok(NULL, " "); //VIP of this node's interface
             if (split == NULL) {
                 printf("Incorrect file format\n");
@@ -166,8 +165,8 @@ int parse_file(char *path){
             }
             vipRemote = strtok(split, "\n");
              
-            printf("VIPTHIS: %s\n", vipThis);
-            printf("VIPREMOTE: %s\n", vipRemote);
+//          printf("VIPTHIS: %s\n", vipThis);
+//          printf("VIPREMOTE: %s\n", vipRemote);
  
             //create interface object
             current->id = count;
@@ -233,8 +232,7 @@ void *receive_func(void *arg) {
 	//    while(1){
       set_up_recv_sock(args->sock,args->addr, args->port, args->received_packet);
       
-      ip_packet IPpacket[1];//=(ip_packet *)malloc(sizeof(ip_packet));
-      printf("heraderpaherp \n");
+      ip_packet IPpacket[1];
       UDPtoIP(args->received_packet, IPpacket);
       if(!checksum_compute(IPpacket)){
       return NULL; // drop packet
@@ -362,7 +360,7 @@ int initial_flood(){
     node_interface *copy = interfaces;
     int i;
     for (i = 0; i < count-1; i++){
-            construct_and_send_IP(count-1, flood_info, 2,  copy->vipRemote);
+	construct_and_send_IP(count-1, flood_info, 2,  copy->vipRemote);
         copy++;
     }
     return 0;
@@ -407,9 +405,9 @@ int routes() {
     //interact with IPRIPInterface to find and print all next-hops; consult table
     fwd_entry *pointer = fwd_table;
     while(strlen(pointer->destVIPAddr) != 0) {
-        printf("%s\n", pointer->destVIPAddr);
-	printf("%d\n", pointer->nextHopInterfaceID);
-        printf("%d\n\n", pointer->cost);
+        printf("%s\t", pointer->destVIPAddr);
+	printf("%d\t", pointer->nextHopInterfaceID);
+        printf("%d\n", pointer->cost);
          
         void *temp = pointer;
         temp += sizeof(fwd_entry);

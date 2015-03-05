@@ -63,5 +63,6 @@ char *sock_recv(int *sock,struct sockaddr_in *receivedfrom_addr, char *received_
         if (recvlen > 0) {
             	received_packet[recvlen] = 0;
         }
+	printf("\n# Received message: %s\n", received_packet);
 	return received_packet;
 }
